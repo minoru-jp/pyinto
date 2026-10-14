@@ -1,0 +1,8 @@
+[notice]
+content = """
+この文書は `shikumi-devdoc` により生成された日本語の canonical document です。
+Canonical source: `{canonical_source}`
+内容を変更する場合は正本を編集し、再生成してください。
+英語の published document は正本からの派生として README.md 等と docs/ に配置します。
+翻訳の進捗は docs/TRANSLATION_STATUS.md を参照してください。
+"""

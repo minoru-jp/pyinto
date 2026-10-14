@@ -1,0 +1,35 @@
+name: Release to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    uses: ./.github/workflows/checks.yml
+    with:
+      release_tag: ${{ github.ref_name }}
+    permissions:
+      contents: read
+
+  publish:
+    name: Trusted Publishing (PyPI)
+    needs: checks
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/pyinto/
+    permissions:
+      id-token: write
+    steps:
+      # No checkout and no rebuild: publish exactly the verified artifacts.
+      - uses: actions/download-artifact@v7
+        with:
+          name: python-distributions
+          path: dist
+      - name: Publish with PyPI Trusted Publishing
+        uses: pypa/gh-action-pypi-publish@release/v1

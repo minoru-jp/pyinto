@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.coverage
+htmlcov/
+
+# Virtual environments and local config
+.venv/
+venv/
+.env
+.env.*
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+
+# Canonical Markdown under devdocs/canonical_documents/ is tracked.
+
+# Locally generated C sample for the external Port experiment.
+examples/port_demo/generated.c
+examples/memory_port_demo/generated.c
+
+.tmp-diff/

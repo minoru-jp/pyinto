@@ -1,0 +1,93 @@
+# Shared quality gate for pushes, pull requests, and tagged releases.
+# This workflow must not acquire package-publishing credentials.
+name: Shared checks
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: "Expected release tag; empty for normal CI"
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install Host and development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+      - name: Run pytest (including Contrace and C/Python reference targets)
+        run: python -m pytest -q
+
+  distribution:
+    name: Lint, documents, and distributions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]' build twine
+      - name: Ruff check
+        run: ruff check .
+      - name: Ruff format check (Python sources)
+        run: ruff format --check src tests scripts devdocs/canonical_sources
+      - name: basedpyright
+        run: basedpyright
+      - name: Japanese canonical documents
+        run: python scripts/docs.py check
+      - name: English publication completeness and synchronization
+        run: python scripts/published_docs.py release-check
+      - name: Verify release tag matches project version
+        if: inputs.release_tag != ''
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: python scripts/verify_release.py "$RELEASE_TAG"
+      - name: Build wheel and sdist (wheel from sdist)
+        run: python -m build
+      - name: Check distribution metadata
+        run: python -m twine check dist/*
+      - name: Verify distribution contents
+        run: python scripts/verify_dist.py dist
+      - name: Test isolated wheel install
+        shell: bash
+        run: |
+          python -m venv "${RUNNER_TEMP}/pyinto-smoke"
+          "${RUNNER_TEMP}/pyinto-smoke/bin/python" -m pip install dist/*.whl
+          cd "${RUNNER_TEMP}"
+          "${RUNNER_TEMP}/pyinto-smoke/bin/python" -c 'import importlib.util; import pyinto; import shikumi; assert importlib.util.find_spec("pyinto.targets") is None; assert importlib.util.find_spec("pyinto.contracts") is None'
+      - name: Save verified distributions
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-distributions
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 7

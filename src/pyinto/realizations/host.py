@@ -1,0 +1,84 @@
+"""Target-neutral Realizer dispatch and final artifact submission."""
+
+from __future__ import annotations
+
+from collections.abc import Iterator
+
+from pyinto.admission import AdmissionRegistry
+from pyinto.constructs import Construct, ConstructError
+from pyinto.constructs.admission import LANGUAGE_ADMISSION
+from pyinto.realizations.registry import Composer, EmitContext, RealizationRegistry
+
+
+def _children(value: object) -> Iterator[Construct]:
+    """Read only published Model parts; never walk arbitrary object attributes."""
+    if isinstance(value, Construct):
+        yield value
+    elif isinstance(value, (tuple, list)):
+        for item in value:
+            yield from _children(item)
+
+
+class RealizationHost:
+    """Dispatch one Model through a Target's declared mode, then request artifact.
+
+    Sessions are instantiated once per request and are entirely Target-owned.
+    Composition preserves the existing Template/Slot call chain; structural
+    dispatch visits every Construct occurrence in depth-first preorder.
+    Projection Targets may explicitly traverse unmatched Construct variants
+    without invoking a visitor; admission inventory checks still apply.
+    """
+
+    def __init__(
+        self,
+        registry: RealizationRegistry,
+        *,
+        admission: AdmissionRegistry | None = None,
+    ) -> None:
+        self.registry = registry
+        self.admission = admission if admission is not None else LANGUAGE_ADMISSION
+        self.admission.require_baseline(LANGUAGE_ADMISSION)
+
+    def run(self, root: Construct) -> object:
+        # Validate the full Model before allowing any Target factory side effects.
+        self.admission.check_tree(root)
+        session = self.registry.session_factory()
+        finish = getattr(session, "finish", None)
+        if not callable(finish):
+            raise TypeError("Target artifact session must implement finish()")
+        if self.registry.dispatch == "composition":
+            receive = getattr(session, "accept_composition", None)
+            if not callable(receive):
+                raise TypeError(
+                    "Composition artifact session must implement accept_composition()"
+                )
+            composer = Composer(
+                self.registry, admission=self.admission, session=session
+            )
+            layout = composer.layout(root)
+            # The Host submits a Layout, not a source string or final artifact.
+            receive(layout, composer.context)
+        else:
+            context = EmitContext(
+                self.registry, admission=self.admission, root=root, session=session
+            )
+            self._walk(root, context)
+        return finish()
+
+    def _walk(self, node: Construct, ctx: EmitContext) -> None:
+        previous_path = ctx.path
+        ctx.path = (*previous_path, node)
+        try:
+            if ctx.registry.unhandled != "traverse" or ctx.registry.has_recipe(node):
+                recipe = ctx.registry.recipe(node, ctx)
+                recipe.visit(node, ctx)
+            # Explicit projection policy: skip only the callback, not children.
+            for part in node.parts().values():
+                for child in _children(part):
+                    if any(parent is child for parent in ctx.path):
+                        raise ConstructError(
+                            "Cyclic Construct parts in structural dispatch"
+                        )
+                    self._walk(child, ctx)
+        finally:
+            ctx.path = previous_path

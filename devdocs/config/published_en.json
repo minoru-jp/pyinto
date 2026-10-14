@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "entries": {
+    "README.md": {
+      "published": "README.md",
+      "canonical_sha256": "ad28542b3c8445cad5aeda333ea4543885f644313205ec4882571c7a853f1878",
+      "english_sha256": "1de525b7312c8d4e827cced291f487b28616a7d8560d076a1385e622532d5c31",
+      "coverage": "translated"
+    },
+    "STATUS.md": {
+      "published": "STATUS.md",
+      "canonical_sha256": "39bb76ae0bc95b86428c132823cfc4bd2957528e4ba7abfbae9a3cb25a8f9b0f",
+      "english_sha256": "6cffca8175f418e550576a13fc0d7f10cca0f9aa01f1cfcd64f1c5ad6c1e0551",
+      "coverage": "translated"
+    },
+    "CHANGELOG.md": {
+      "published": "CHANGELOG.md",
+      "canonical_sha256": "d06322aa912e1b9fc466b2f5311dac919e9f6966ab14049e9a9a40f9196248e5",
+      "english_sha256": "f2a37e34f571d2a13bef8d935751ad177f57d32a4fc152d560d2031d8b5a515c",
+      "coverage": "translated"
+    },
+    "GLOSSARY.md": {
+      "published": "docs/GLOSSARY.md",
+      "canonical_sha256": "c7d70fa1c961b41b06b03e6339227e95b2a90bb176496d54f2f9b467e9c8f200",
+      "english_sha256": "9ea95d36aa01940c2c48f6597b8c2d418353c4178c4b62544cc5d66ce3cdd827",
+      "coverage": "translated"
+    },
+    "specification/INDEX.md": {
+      "published": "docs/specification/INDEX.md",
+      "canonical_sha256": "735b9c77b486888dd0bd145fd19b2e2d127e726e1ee8bc9cd8a962bef64a83d0",
+      "english_sha256": "77872a4265680c696eec705f676674afe1fe87d860e2eb96213fb07797c35f58",
+      "coverage": "translated"
+    },
+    "specification/construct.md": {
+      "published": "docs/specification/construct.md",
+      "canonical_sha256": "53dfdf9f5da9ed17dbf838f9acb16f499e628c1a24f64129ea16698712249eb8",
+      "english_sha256": "d1a8d0445cf39dc412a0a936ccc13b6ebcdfdc43e475f6caad69ab09ce436768",
+      "coverage": "translated"
+    },
+    "specification/frontend.md": {
+      "published": "docs/specification/frontend.md",
+      "canonical_sha256": "81cfbf83fe29ff43b8984cc549946d3e3998ca8aac3a80629f20fdaf3ccd3c7a",
+      "english_sha256": "69dd0daa0f53021399807276e6e05aee0d30d36ece1cae65c483a06d1c108d26",
+      "coverage": "translated"
+    },
+    "specification/composition.md": {
+      "published": "docs/specification/composition.md",
+      "canonical_sha256": "c55f8ec08ed6d5938cdd40ad735f35c6b90f0753eea2e5d9a9edec3a2c5826f9",
+      "english_sha256": "81ba117f738faf9045c6a9d51bc832004625412fa16d7247713c3573ac3d8a0b",
+      "coverage": "translated"
+    },
+    "specification/conversion.md": {
+      "published": "docs/specification/conversion.md",
+      "canonical_sha256": "49106fdfbcce4977bba341a6a06e912b2e5f7ec65514e0238e16949067898d56",
+      "english_sha256": "09723804fdf69aaf273696beb453cfab1c808ec800f50f8772c7315336a37ef2",
+      "coverage": "translated"
+    },
+    "target_implementation/INDEX.md": {
+      "published": "docs/target_implementation/INDEX.md",
+      "canonical_sha256": "0bed4ba167aa6671317c897f861ae63c28b880a2d8094c7d4c5494e10b2d2988",
+      "english_sha256": "58398b1eec73f89efbc342b4eb2bfae1e9932319857be80a6e462ff6f0aa8945",
+      "coverage": "translated"
+    },
+    "target_implementation/implementation-guide.md": {
+      "published": "docs/target_implementation/implementation-guide.md",
+      "canonical_sha256": "fe59ccc559c9d5e64a170e079291b72665695d4eceee7626d16c483b4c4835d3",
+      "english_sha256": "2dbac55276dbd7b8bf3c6e42e8df7e734d3563b991c0d5880e50f289354de457",
+      "coverage": "translated"
+    },
+    "target_implementation/declaration-reference.md": {
+      "published": "docs/target_implementation/declaration-reference.md",
+      "canonical_sha256": "9f6164fd0a32b600b5a18009ec5c746fc6002ce1e03548578f653c11843af194",
+      "english_sha256": "4e2dbc4af87afa001c73dd4924e67ddcb96dac7157c927dddbb2190883421104",
+      "coverage": "translated"
+    },
+    "target_implementation/construct-reference.md": {
+      "published": "docs/target_implementation/construct-reference.md",
+      "canonical_sha256": "8754a557f6431883c35edaaf0129c5aa654e30113e11266b902f222d28b87f63",
+      "english_sha256": "0278acbb4f7d45fba136ac72de113c6750beb3d7b271ef1b910353cc02672878",
+      "coverage": "translated"
+    },
+    "target_implementation/admission-reference.md": {
+      "published": "docs/target_implementation/admission-reference.md",
+      "canonical_sha256": "2a79f8d49c29828cf7691c577d94c924ecdf0c2bbcf084784ffad0675070d02f",
+      "english_sha256": "a3852486a5280254b9b2236fc4fe8fb06ebc5c9dd7e0ac5faca085f6228fed10",
+      "coverage": "translated"
+    },
+    "target_implementation/verification-guide.md": {
+      "published": "docs/target_implementation/verification-guide.md",
+      "canonical_sha256": "6363cd186926db69455def09c81b3e92ef09683701e51a9f247699c425e8c3c1",
+      "english_sha256": "4f930c3c376f5ffa5e32da3e9c317b9fd867420600a0a8f6fb80bfd1e2eec5f5",
+      "coverage": "translated"
+    }
+  }
+}

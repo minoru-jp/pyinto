@@ -1,0 +1,94 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyinto"
+version = "0.0.1"
+description = "Experimental Python-to-Model normalization and target-defined artifact realization"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "minoru-jp" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = ["shikumi==0.2.4"]
+
+[project.optional-dependencies]
+dev = [
+    "shikumi==0.2.4",
+    "shikumi-devdoc==0.3.5",
+    "shikumi-contrace==0.1.0",
+    "pytest>=8,<10",
+    "ruff==0.16.10",
+    "basedpyright==1.40.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+# Contrace contract fixtures are development assets, not runtime modules.
+exclude = ["pyinto.contracts", "pyinto.contracts.*"]
+
+[tool.ruff]
+target-version = "py311"
+
+[tool.ruff.format]
+exclude = ["devdocs/canonical_documents/**"]
+
+[tool.basedpyright]
+include = ["src", "tests/support/c_realizer"]
+pythonVersion = "3.11"
+extraPaths = ["src"]
+typeCheckingMode = "standard"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+contrace_contract_assets = ["pyinto.contracts"]
+contrace_tests = ["tests"]
+contrace_implementations = [
+    "pyinto.frontend.parser",
+    "pyinto.frontend.context",
+    "pyinto.frontend.statements",
+    "pyinto.frontend.statement_services",
+    "pyinto.frontend.expressions",
+    "pyinto.frontend.functions",
+    "pyinto.frontend.classes",
+    "pyinto.frontend.interface_mapping",
+    "pyinto.frontend.imports",
+    "pyinto.frontend.annotations",
+    "pyinto.frontend.decorators",
+    "pyinto.frontend.decorator_effects",
+    "pyinto.admission",
+    "pyinto.constructs.admission",
+    "pyinto.constructs.types",
+    "pyinto.constructs.base",
+    "pyinto.constructs.type_rules",
+    "pyinto.constructs.values",
+    "pyinto.constructs.collections",
+    "pyinto.constructs.control",
+    "pyinto.constructs.updates",
+    "pyinto.constructs.operations",
+    "pyinto.constructs.intrinsic",
+    "pyinto.intrinsics",
+    "pyinto.constructs.functions",
+    "pyinto.constructs.classes",
+    "pyinto.realizations.registry",
+    "pyinto.realizations.call_layout",
+    "pyinto.realizations.regulation",
+    "pyinto.realizations.layout",
+    "tests.support.c_realizer.pack",
+    "tests.support.python_realizer.pack",
+    "pyinto.interface_mapping.registry",
+    "pyinto.interface_mapping.declarations",
+    "demo_ports_pyinto.adapter",
+    "demo_memory_ports_pyinto.adapter",
+]

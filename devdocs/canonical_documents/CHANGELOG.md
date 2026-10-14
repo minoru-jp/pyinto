@@ -1,0 +1,224 @@
+<!--
+この文書は `shikumi-devdoc` により生成された日本語の canonical document です。
+Canonical source: `devdocs/canonical_sources/changelog/canonical.py`
+内容を変更する場合は正本を編集し、再生成してください。
+英語の published document は正本からの派生として README.md 等と docs/ に配置します。
+翻訳の進捗は docs/TRANSLATION_STATUS.md を参照してください。
+-->
+
+# pyinto 変更履歴
+
+0.0.1 開発段階の変更。正式リリース履歴ではない。
+
+## 0.0.1（Alpha、未公開）
+
+最初の開発用構成と、設計転換後の Construct 実験。
+
+version: 0.0.1
+
+Added:
+
+- 第49回として、Constructの有限variant定義域（VARIANTS / variant_domain()）をModel側で公開し、Realization登録時に不正なvariant名と存在しないdefault省略を拒否。Structural射影では複数variant/開いた定義域の省略を拒否し、明示指定を要求する。variant @= '*' の全variant一致、個別variant優先、重複拒否を導入し、Compositionの既存Template/Slot連鎖とAdmission検証は維持。IntrinsicCall等の開いたvariant定義域は未列挙として扱う。
+- 第48回として、Target Packのpack_semantics（preservation/projection）とpack_unhandled（error/traverse）をShikumi宣言およびRegistryに追加。Structuralな射影Targetは未登録Realizerに対して明示的なtraverse方針を使い、子の走査を継続できる。射影は実行意味のsupports照合を要求せず、Model全体のAdmission登録検証は維持する。保存型とCompositionの既定の厳格さは維持。関数名・戻り値型だけの非テキストTargetによる回帰検証を追加。
+- 第47回として、Target Pack単位でcomposition/structuralのRealizer呼出方式を選べるShikumi宣言とTarget所有のArtifact Sessionを追加。CompositionのTemplate/Slot遅延連鎖は維持し、TextArtifactSessionがTarget側で最終文字列化する。StructuralはModel.parts()順の全Construct訪問を行い、visitコールバックはTarget専用状態を書き換える。Hostは終了後finish()で任意型成果物を受け取る。Model/Frontend/Admissionを変更せず、C/開発用Python Realizerと新規非テキストTargetテストで動作を検証。
+- 第46回として、トップレベル自作関数の型付き*argsを限定的に受理。可変長TupleType、ParameterRole.VARIADIC、FunctionSignature.variadic_parameterと既存FunctionCallの追加位置引数により、固定引数のデフォルト/キーワード・ソース順評価・Tuple型を保持する。len/sum/forで本体の変数を参照でき、可変長TupleのTarget実現を新たなAdmission義務として明示。動的引数展開、varargs関数値化、ネスト関数/メソッド、**kwargsは拒否。C Targetへ新規Realizationは追加せず、Interface Mapping側の既存機能は維持。
+- 第41回として、Shikumiの親子宣言 `@maps(function)` / `@signature(...)` と `factory @= ...` を追加し、`InterfaceMappingRegistry.from_declarations()` から既存の関数Mappingへ変換するAPIを設けた。複数署名・名前付き引数・既定値・静的可変長位置引数・曖昧性拒否は既存経路を再利用。外部Deviceサンプルを新形式へ移行。関数オブジェクトは定義元のモジュール名に限定し、再エクスポートやクラス/メソッドMappingは未拡張。既存のFrontendとTarget実現契約に変更なし。
+- 第40回の外部Interface関数Mapping拡張として、`InterfaceVariadicParameter`による静的可変長位置引数、および同じ関数名に対する明示的な複数署名登録を追加。引数式は候補数と無関係に一度だけ正規化し、型・個数・名前と既定値で一意に合致する署名だけのfactoryを実行する。重複登録、候補なし、曖昧な候補、型不一致、動的引数展開、評価順序を保持できない副作用式の並べ替えを明示拒否する。Model、Admission、Target実現規則、従来単独署名の受理範囲は変更しない。
+- 第38回後の外部Interface関数Mapping引数対応として `InterfaceParameter` を公開し、名前・値型・末尾の不変リテラル既定値を宣言できるようにした。Pythonの通常の位置・キーワード・混在呼出を同じ宣言順のModel引数に正規化し、未知・重複・不足・型不一致・引数展開と、評価順序を保存できない副作用式の並べ替えを拒否する。旧位置引数専用Mappingの受理範囲、`_force`の消去、Model/Targetの既存契約は維持。
+- Python Source Adapterの絶対import構文を拡張。先頭import節の `import module[.submodule] [as alias]` と `from package import submodule [as alias]` を、明示登録済みの外部APIに対する静的な名前解決へ接続した。多段属性関数呼出を同一Interface Mappingへ正規化し、モジュール名衝突・未登録名・動的な属性経路を明示拒否。Model意味契約・C TargetのRealization・Pythonコード非実行方針は維持。
+- 公開面再設計の第3工程としてShikumiの `@naming` を追加。Targetの命名規則を引数なしのデコレーターマーカーで定義できるようにした。既存の `naming @= True` と同じ NAMING 情報を使用し、`@realizes(element)`・旧役割記述器との宣言クラス単位の排他性、Target内の命名規則重複、requirement_lineのSlot制約を維持。C Targetと開発用Python Realizerの旧記法は次工程で移行し、Model、Frontend、Targetの変換範囲は変更しない。
+- 公開面再設計の第2工程として、Shikumiの `@realizes(element)` を追加。Host公開Construct、直接Builtin Callの要素 `builtin.PrintCall`、型のValueKind / PortTypeを、既存RealizationRegistryのConstruct・Call・型表記の各経路へ同一キーで登録する。`print`のCallとPrintValuesを別対象として維持し、新旧の重複登録・不正な対象・Contract未対応・Slot不正は拒否。既存のhandles/binds/spells/namingとC/Python Targetの実装・Frontend受理範囲は維持。`@naming`、旧記述器撤去、他のCall公開要素は後工程。
+- 公開面整理の第1工程として `pyinto.interfaces.language` / `builtins` と `pyinto.model.value_types` を追加。既存Constructクラス・ValueKind enumを同一性維持で再エクスポートし、Target側に内部ファイル配置・型の文字列キーを直接意識させない窓口を用意した。変換API、Shikumiの役割記述、C Target、Model契約の意味と受理・拒否範囲は変更しない。`@realizes(element)` / `@naming` は後続工程で対象の識別を監査してから導入する。
+- Model表現能力拡充第12回（第35回作業）として、if/else・while/else・for/else・withの本体内の明示型付き新規値宣言を、既存Initialize/Blockで静的正規化できるようにした（FRT_071）。宣言後の同じ本体と入れ子本体に限る参照を検証し、終了後・他節・宣言前の使用を拒否する。
+- Model表現能力拡充第11回（第34回作業）として、`for` による既知要素型の単一変数の暗黙導入を追加（CST_073 / FRT_070）。IterationEntryの導入フラグと `iteration.binding.introduced` の事前受理契約を分離し、空反復時の人工的な初期化を避ける。従来の既宣言反復を維持し、新規変数のループ外・else節からの参照は受理しない。
+- Model表現能力拡充第10回（第33回作業）として、型付きList・Stringの `SliceValue` を追加（CST_072 / FRT_069）。省略境界を保ち、負ステップ・添字切詰め・0ステップ実行時例外を保持。Listの浅いコピーとUnicode文字列の選択を独立した意味契約として受理判定に登録。
+- Model表現能力拡充第9回（第32回作業）として、型付きList要素とDictキーの `in` / `not in` を独立した Membership Construct へ正規化（CST_071 / FRT_068）。評価順・種類別検索・結果否定の意味契約をConstruct提供者のAdmissionRuleへ登録。
+- Model表現能力拡充第8回（第31回作業）として、既宣言名への固定長Tupleアンパック代入 `UnpackAssign` を追加（CST_070 / FRT_067）。右辺の一括一回評価と左から右への格納先更新を独立した意味契約として登録し、Realization未対応時は拒否する。
+- Model表現能力拡充第7回（第30回作業）として、書式なしf-stringの断片を順序付きで保持するFormattedStringと、0個・複数の値を一括出力するPrintValuesを追加（CST_069 / FRT_066）。型付きstr変換の既存IntrinsicDefinitionを再利用し、文字列化と出力の契約を分離した。
+- Model表現能力拡充第6回（第29回作業）として、標準Intrinsic提供者表にstr/int/floatの引数なしおよび明示型int/float/str/boolの一引数変換15署名と、str.upper/str.lowerのUnicode操作を採用（CST_068 / FRT_065）。署名ごとの意味契約と受理拒否の回帰試験を追加。
+- Model表現能力拡充第5回（第28回作業）として、IntrinsicRegistryの同一操作キーに複数の静的シグネチャを保持する機能と、署名内限定IntrinsicTypeVar / IntrinsicListTypeを追加（CST_067 / FRT_064）。静的な一意候補の選択、重複・曖昧・型不一致・未束縛変数の拒否、None戻りのメソッド式文、署名別契約と受理判定の回帰テストを追加。
+- Model表現能力拡充第4回（第27回作業）として、提供者が静的署名と意味契約を定義できるIntrinsicDefinition・IntrinsicRegistryと、呼出の評価順を保持するIntrinsicCallを導入（CST_066 / FRT_063）。型・個数の正負テスト、提供者表の重複拒否、名前衝突時の既存宣言優先、呼出契約とSlotを検証した。
+- Model表現能力拡充第3回（第26回作業）として、整数同士の真の除算をfloat値のIntegerTrueDivisionとして追加し、整数の5種類のビット二項演算・単項~・ビット複合代入をModel/Frontendに追加（CST_065 / FRT_062）。負数・負シフト回数・任意精度・型不整合の正負テストを追加。
+- Model表現能力拡充第2回（第25回作業）として、AugAssign（int/floatの既宣言名・型付きインスタンスフィールドへの再束縛）と、ComparisonChain（同一型int/float/strの3項以上の比較）をModel/Frontendに追加（CST_063〜064 / FRT_060〜061）。入力の型・演算子の負例と、二項比較・通常代入の回帰試験を追加。
+- Model表現能力拡充第1回（第24回作業）として、無操作文Passと、Program / FunctionDefinition / ClassDefinitionのdocstring静的メタデータを追加（CST_062 / FRT_059）。パッケージ内のAdmission登録と独立した監査台帳を更新し、ModelとFrontendの正負テストを追加した。
+- 第30段階後の基盤整理第23回として、型付き二項式・Port Call・FunctionValueCallの既存評価順契約をConstruct側AdmissionRuleから導出し、対応を宣言しないRealizationを描画前に拒否する（CMP_020）。単純TemplateにおけるValue Slotの欠落・重複・並び替えも保守的に検出する。
+- 第30段階後の基盤整理第22回として、キーワード引数、既定値、dataclass、lambda、符号付き定数、将来の型付き基本操作についてFrontend正規化とModel/Realization境界を監査正本で再検討。Modelに保持する意味情報とTargetによる実現方式の区別を確認し、変更しない契約と将来の仕様判断を明記した。
+- dataclassと明示的な型付き__init__のModel一致、宣言順束縛とソース順評価、省略既定値と明示引数の区別、lambda内部名の衝突回避、未対応の一般デコレーターと可変デフォルトの拒否に関する回帰テストを追加。既存の意味契約・Target Pack・AdmissionRuleは変更せず、第23回の評価順とSlotの課題をpendingのまま維持。
+- 第30段階後の基盤整理第21回として、Forのbreak/continueおよびelse正常完了、Withのenter/exitと例外時の退出をConstruct提供側の独立したAdmissionRuleに登録し、C/Python標準Packの対応supportsと照合する（CMP_019）。
+- 第30段階後の基盤整理第20回として、Construct提供者による明示的なAdmissionDeclaration / AdmissionRegistryを追加。Coreの67具体Constructと外部Port提供者による契約登録を区別し、未登録Modelを合成前に拒否する（CMP_018）。受理規則をbindingsから中立側へ移し、Target Packの契約自己登録を廃止した。
+- 第30段階後の基盤整理第19回として、束縛済み直接呼出5種の評価順契約を修正。仮引数順の位置引数呼出でも明示実引数が2つ以上なら `call.arguments.left_to_right` を要求し、再束縛による並べ替えは `call.arguments.reordered` として別に要求する（CMP_017）。省略既定値は評価式に数えない。
+- 第30段階後の基盤整理第18回として、Model意味情報の監査とRealizationの受理規則との機械的な対応テストを追加。新しいguardフィールドや非フィールド義務の分類漏れ、受理ルールの未登録を検出できるようにした。IntrinsicCall、AugAssign、比較チェーンの仮構造で開いた操作名や評価契約の拡張を検証（CMP_016）。
+- 第30段階後の基盤整理第17回として、for文の反復元型と既宣言ターゲットへの要素型の適合をFrontendで検証。intなどの非反復可能値、要素型不一致、辞書反復の誤受理を修正した（FRT_003）。IterationEntryとForで反復形式に応じた `supports` 宣言の照合を実装した（CMP_015）。
+- 第30段階後の基盤整理第16回として、5種の直接呼出について複合契約の受理・拒否テストを追加。単純な文字列Templateでの実引数Slotの欠落・重複・評価順序変更を合成前に拒否する検査を導入した（CMP_014）。ソース順と省略引数を保つ静的Template／TemplatePlanの実際の出力を検証し、Target上のPython実行でも副作用の順序を確認した。
+- 第30段階後の基盤整理第15回として、Target Pack の `supports` 宣言と Realization 選択後の契約照合を追加。関数・生成・メソッド呼出の引数束縛、非自明な評価順、引数省略、VIRTUAL/SUPER、クラス Receiver 同一性の要求を Model インスタンスから機械的に抽出し、未宣言の場合は render と requirements 収集前に拒否する（CMP_013）。既存の標準 Target Pack は新対象の Binding がないため受理範囲を変更しない。
+- 第30段階後の基盤整理第14回として、Construct 全67クラスの宣言フィールドを正本監査台帳に分類し、新しいクラス・フィールドの追加漏れを検出するテストを追加。`devdocs/canonical_documents/REALIZATION_BOUNDARY_AUDIT.md` を Python 正本から生成する経路を加え、評価順、引数省略、super、反復形式、短絡などの未保護契約と設計上の検証例を記録した。
+- 独立したクラス型予約、クラス/関数/式/文の Context 共有、super メソッド呼出、dataclass の単一適用、失敗後の解析状態の隔離に関する5件のテストを追加した。Contrace 実装走査も新構成へ更新した。
+- 独立関数コンポーネントでの引数評価順序、ネストした関数・lambda、解析間の状態再生成、失敗時のスコープ復元に関する5件の回帰テストを追加した。
+- 独立した文正規化器での出力と解析 Context の共有、例外を含む関数本体、失敗時の制御フロー状態復元、解析間でのサービス再生成を検証する回帰テストを追加。
+- 独立した式正規化、解析ごとの Context と Port 正規化器の一致、関数値・lambda を含む式、再解析・失敗後の状態非共有を確認する回帰テストを追加。
+- 独立 PortNormalizer と import 解決、デコレーターと Port の別名衝突、Frontend を再利用した解析失敗後の状態非共有を確認する回帰テストを追加。
+- 外部の登録済みデコレーターから静的メソッド・クラス構造・型付き関数Modelへの正規化を行う回帰テストと、未登録ハンドラー、署名不一致、複数適用の拒否のテストを追加。Target Realization と既存 Model 契約は変更しない。
+- lambda を実引数に持つ入れ子フィールド・メソッド・代入経路での識別子生成回数と、入れ子スコープ・失敗時の状態復元を確認する回帰テストを追加。Model の意味契約および Target Realization の受理範囲は変更しない。
+- Model 直接構築における戻り値不整合、None/Any/object、公称型継承、制御文内 Return、入れ子関数の所有境界、Frontend 診断の回帰テストを追加。既存のデコレーターや Realization の意味契約は変更しない。
+- 値型の投影・公称型の継承方向・直接/間接呼出の型整合・Frontend の受理について回帰テストを追加。Realization と既存のデコレーター・スコープの意味契約は変更しない。
+- `pyproject.toml`、MIT License、作者 `minoru-jp`、src レイアウトを追加した。
+- README / STATUS / CHANGELOG の日本語 canonical source と生成済み文書を整備した。
+- `shikumi-devdoc` 文書生成と `shikumi-contrace` の契約・テスト関連づけを用意した。
+- Construct の4スロットと Python AST フロントエンド、C ソース生成を試作した。
+- 生成した C のコンパイル・実行を含む pytest を追加した。
+- Binding の差し替え・検証エラー・未登録・重複登録を検証するテストを追加した。
+- 独立した Python Target Pack、穴名・役割・重複定義の検証、複数言語の実行テストを追加した。
+- Python 実行可能な外部 Port (`demo_ports`) と、それを対象言語の Domain Construct に対応づける独立アダプタの小さな実験を追加した。
+- PortRegistry による明示的な完全修飾名の登録、重複検査、`_force` 定数の Python 専用扱い、未知の依存の明示的な拒否を追加した。
+- 外部 DeviceIsReady Construct / C Target Pack の `device.h` 要求と独立 C 実装の GCC / Clang コンパイル・リンク・実行テストを追加した。
+- Port の `shikumi-contrace` 契約と Python / C の挙動が意図的に異なることを確認するテストを追加した。
+- `PortClassDefinition` による外部インスタンス Port の宣言、構築バリエーション・明示的メソッド・プロパティの登録、厳格な受理と拒否を追加した。
+- Construct の `ConstructStart` と `ExplicitCleanup` を追加し、通常の実現時には Cleanup を自動配置せず、登録された明示的 release 呼び出しで元 Construct の Cleanup を要求できるようにした。
+- 別置きの `demo_memory_ports` および `demo_memory_ports_henkan` を追加し、`ManualMemoryRegion.integer(minimum=..., maximum=...)` の Python 実行と C の動的確保・代入・読取・明示的解放を検証した。
+- Shikumi Target Pack の compact/wide 二方式による制約依存の格納型選択、C のコンパイル・実行、範囲外・未登録・別名等の拒否、Port 契約連携テストを追加した。
+- 共通 Composer と最終 Renderer、単一 template と選択 callback の Shikumi 規定体を実装した。
+- Port 参照の別名付き型宣言および値域契約に基づく型表現の伝播を実装した。
+- `While` Construct を条件 Value と本体 / 正常終了時の Block から成る構造として追加した。
+- C / Python の `while` Target Binding を追加し、既存 Composer のままで再帰合成・実行を検証した。
+- `Break` / `Continue` を Target に依存しない Construct として追加し、`while` の `else` と併用できるようにした。
+- `For` / `IterationEntry` / `Range`、`With` / `ContextEntry` を構造化し、C/Python の対応可能な Binding と検証テストを追加した。
+- `for` の `range` 反復は C Binding 側で引数の一回評価・独立した反復変数・中断時の `else` 抑制に対応した。
+- Binding 選択用 EmitContext に root / current / parent / ancestors / path の構造参照を追加した。元の Construct は変更しない規約とする。
+- shikumi-devdoc Vocabulary 正本から Model / Construct / Interface / Realization / Template / Slot などの `GLOSSARY.md` を生成する工程を追加した。
+- SDD の初期基準点として、Construct / Frontend / Composition の現行仕様を `shikumi-devdoc` Specification で作成し、仕様 INDEX と再生成・整合性検証を追加した。
+- 現在の仕様 ID に対応する補強テストを追加し、Realization 側の改名や新しい Interface 機能は先行して実装しない方針を維持した。
+- CST_007/008・CMP_008 の仕様と、Model / Realization 境界の回帰テストを追加した。
+- Conversion API の CVT_001〜003 と Composition の CMP_009 を追加し、ソース変換・Target 差し替え・Port 明示指定のテストを追加した。
+- CST_009 / CMP_010 の仕様と、Model 非変更・多形式 range・Slot の誤使用拒否を確認するテストを追加した。
+- CST_010〜012 / CMP_011 の仕様と Model 単独利用、Target 間再利用、出力 Slot の境界を検証するテストを追加した。
+- CST_013〜014 / CMP_012 の仕様と、動的 With エントリーの静的・実例検証、構築時拒否、外部 Construct の互換性確認を追加した。
+- SDD 第7段階で Arithmetic / IntegerUnary / BooleanOperation / BooleanNot の Target 非依存 Model と Python Frontend の式正規化を追加した。
+- CST_015〜016、FRT_007〜008 の仕様と型・構造・評価順序・未対応 Target Realization の拒否を検証するテストを追加した。
+- SDD 第8段階で FunctionSignature / Parameter / FunctionDefinition / FunctionCall / Return を Model に追加し、Python Frontend で型付き関数・明示的 return・ローカルスコープを正規化できるようにした。
+- CST_017〜018、FRT_009〜010 を仕様化し、再帰・前方参照・型不一致・スコープの独立・Realization 未対応の拒否を検証するテストを追加した。
+- SDD 第9段階で Python Frontend のレキシカルスコープ解決を任意深度の直接入れ子関数へ拡張し、FunctionSignature.scope と Symbol.scope で同名の宣言元を区別した。
+- CST_019 と FRT_011〜012、外側の変数参照・同階層再帰・前方参照・名前のシャドーイング・未対応構文の拒否についてのテストを追加した。新規 Construct クラスおよび Realization は追加しない。
+- SDD 第10段階で再帰的な ValueType / CallableType と ValueKind.FUNCTION を追加し、FunctionSignature.value_symbol に関数宣言の値参照を結び付けた。
+- CST_020〜021、FRT_013〜014 と関数値の型付き参照・受け渡し・関数型戻り値、型不一致・間接呼出の拒否を検証するテストを追加。既存 with の意味・Realization は変更しない。
+- SDD 第11段階で FunctionValueCall を追加し、関数型変数・引数、Callable を返す式を介した位置引数の間接呼出を Model / Frontend に追加。直接 FunctionCall の契約は変更しない。
+- CST_022、FRT_015〜016 と関数値の評価順序・型整合性・多段間接呼出・クロージャーの静的捕捉経路・未対応 Realization の拒否を検証するテストを追加。
+- SDD 第12段階で Target 非依存の読み取り専用 `henkan.analysis.lexical_captures()` を導入。既存の宣言スコープと Reference / FunctionCall から関数ごとの直接捕捉を初出順に導出し、専用 Closure Construct は導入しない。
+- CST_023〜024 / FRT_017 に静的捕捉と呼出ごとの実行時環境の責務分離を明記。深い入れ子、兄弟関数参照、関数値の受渡し、複数ファクトリ呼出、自己再帰、非対応構文の拒否についての回帰テストを追加した。
+- SDD 第13段階で固定長の再帰的 TupleType と TupleValue / TupleElement を新設し、tuple[...] 型宣言、リテラル、ネスト、静的な非負位置参照を Model / Frontend で受理。引数・戻り値・Callable との組合せも型形状により検証する。
+- CST_025〜026 / FRT_018〜019 と要素順序・再帰型・範囲・不正な型・未対応 Target Realization の拒否に関するテストを追加した。既存 with の意味は変更しない。
+- SDD 第14段階で Raise / ExceptHandler / Try を新設。ValueError / TypeError / RuntimeError の静的な送出・型別捕捉と、try / except / else / finally の構造を Model / Frontend へ追加し、送出メッセージの文字列型制約と未対応例外形式の明示拒否を定義した。
+- CST_027〜029 / FRT_020〜021 と例外処理節の順序、正常完了・制御移行・finally 優先順位、元 Model の非変異、未対応 Realization の拒否を検証するテストを追加した。既存 with の意味・実装は変更しない。
+- SDD 第15段階で再帰的 ListType / ValueKind.LIST と ListValue / ListElement / ListElementAssign を追加し、型付きの同種可変リスト、動的整数添字による参照、型検証付きの要素更新を Model / Frontend に導入した。
+- CST_030〜031 / FRT_022〜023 と空・ネストしたリスト、関数・Callable・タプルとの組み合わせ、別名・捕捉参照・型不整合、未対応 Realization の拒否についてのテストを追加した。既存 with・tuple・例外処理の意味論は変更しない。
+- SDD 第16段階で `DictType` / `ValueKind.DICT` と `DictEntry` / `DictValue` / `DictElement` / `DictElementAssign` を追加。`dict[int, V]` および `dict[str, V]` の型付き可変辞書を、順序付きのキー・値式、参照共有、既存キー更新・新規キー追加、キー不在の失敗契約として Model / Frontend に導入した。
+- CST_032〜033 / FRT_024〜025 と辞書・リスト・タプル・Callable の再帰型、空辞書の期待型、関数・クロージャー・別名、非対応構文と欠落 Realization の明示拒否に関するテストを追加。既存 with・tuple・list・例外処理の意味論は変更しない。
+- SDD 第17段階で `InstanceType` / `ValueKind.INSTANCE`、ClassSignature / ClassDefinition、FieldDefinition / FieldInitialize / FieldRead / FieldWrite、InstanceCreation / MethodCall を追加。既存 FunctionDefinition をクラスメソッドへ再利用し、受取手を `ParameterRole.RECEIVER` によって位置・名前だけによらず明示した。
+- CST_034〜036 / FRT_026〜028 を仕様化。静的に宣言・初期化したフィールド、公称型、別名経由の属性操作、明示受取手とモジュール名前空間の分離、非対応の動的機構の拒否と Realization 未対応を検証するテストを追加。既存 with 等の意味論は変更しない。
+- SDD 第18段階で静的な単一継承を `InstanceType.base` / `ClassSignature.base` と階層的な宣言参照で表現。通常メソッド呼出の仮想ディスパッチ、`super()` のレキシカルな直上探索、派生型から基底型への互換性、親初期化とオーバーライド署名の不変条件を追加。
+- CST_037〜039 / FRT_029〜031 と、複数階層の継承、基底型を介する仮想呼出、同じ Receiver への super 呼出、型不整合・非静的継承の拒否のテストを追加。新しいクラス関連 Realization は提供せず、既存 with 等の意味契約は変更しない。
+- SDD 第19段階で静的な継承クラスと既存の関数・第一級関数値・タプル・リスト・辞書・クロージャーを合成する検証を追加。型付きの要素参照や関数戻り値をメソッド Receiver に保持し、Callable 型インスタンスフィールド呼出を既存の FieldRead / FunctionValueCall へ正規化した。
+- CST_040〜041 / FRT_032〜034 と30ケースの合成・境界・Realization 未対応の回帰テストを追加。新規 Construct / Target Realization を導入せず、既存 with 等の意味契約は変更しない。
+- SDD 第20段階で既存の Model / Frontend / Realization 能力と未採用構文の境界を棚卸しした。`devdocs/reviews/phase20_construct_capability_audit_ja.md` に、Boolean 定数値・一般 None 値・条件式などの優先候補と、次の仕様検討手順を記録した。
+- 第19段階の正常系・拒否系を観測する独立の37テストを追加。既存 Construct の意味、Frontend、Target Realization、shikumi-devdoc の規範的な CST/FRT 仕様は変更していない。
+- SDD 第22段階で `Length` / `Absolute` / `Extremum` を Model / Frontend に導入し、組み込み `len` を str/tuple/list/dict、`abs`・2引数以上の `min` / `max` を整数だけに限定して正規化した。
+- CST_045〜047 / FRT_039〜041 と型・式評価順序・名前解決の境界・未対応 Realization の検証を追加。既存の Range/Call/With・関数・コレクションの意味論を変更せず、第20段階の旧拒否テストを新仕様の非対応ケースに差し替えた。
+- SDD 第21段階で厳密な bool 定数の BooleanLiteral、一般式の NoneLiteral、型付き条件式 ConditionalExpression を Model / Frontend に追加。Python の truthiness・暗黙の Optional/Union は導入せず、式の子構造・型検証・非選択枝の非評価契約を保持する。
+- CST_042〜044 / FRT_035〜038 と正常系・不正型・関数/複合型との合成・未対応 Realization の明示拒否に関するテストを追加。過去の未対応ケースの診断期待値を現在の型不一致に合わせて更新し、Literal・Return・with の既存契約は変更しない。
+- SDD 第23段階で `IntegerSum` と `BooleanAggregate` を Construct / Frontend に追加した。`sum` は整数 list/tuple/range と任意の整数開始値に限定し、`any` / `all` は Boolean list/tuple と短絡評価・空時の結果を契約化した。
+- CST_048〜049 / FRT_042〜044 と、評価順・空コンテナ・明示型・名前解決・未対応 Realization の回帰テストを追加。旧 sum 未対応テストと旧 FRT_041 の未採用リストを新仕様に合わせて更新し、with や既存の式の意味論は変更しない。
+- SDD 第24段階で浮動小数点の独立した値種別 `ValueKind.FLOAT` / `FloatingLiteral`、浮動小数点の加減乗除・符号・比較、Unicode 文字列の連結・繰返し・比較・部分文字列包含・添字を Model / Frontend に追加した。
+- CST_050〜055 / FRT_045〜047 と49件の新規検証ケースを追加。既存の int/str Literal、整数演算、with、数値 Interface、Realization の意味論は変更せず、Target Realization は引き続き未実装。
+- SDD 第25段階で直接 FunctionCall、InstanceCreation、MethodCall（通常・super）の静的なキーワード実引数を受理。仮引数順の arguments とソース上の evaluation_order を別々に保持し、Realization へ副作用式の評価順序契約を公開する。
+- CST_056 / FRT_048〜049、引数名の束縛・型照合・位置/キーワード混合・重複/欠損/展開引数の拒否・間接呼出の従来制限・未対応 Realization の回帰テストを追加。既存 with などの意味論は変更しない。
+- SDD 第26段階で末尾の型付き仮引数への不変スカラーリテラルデフォルトを FunctionSignature / Parameter に追加し、直接 FunctionCall / InstanceCreation / MethodCall（通常・super）の省略実引数を静的に補完する機構を実装した。
+- CST_057 / FRT_050〜051 と、明示引数の評価順・省略箇所の区別、NoneLiteral、型不一致、可変デフォルト拒否、関数値間接呼出未対応および従来の既存構造の回帰テストを追加した。汎用 Python デフォルト式や Target Realization は導入しない。
+- SDD 第30段階で `LambdaValue` を導入。明示 `Callable` の文脈で `lambda` の仮引数と戻り値を型付けし、既存 FunctionDefinition と静的レキシカル参照/捕捉の構造を再利用した。
+- CST_061 / FRT_056〜057、型付きラムダ・入れ子・関数引数/戻り値・コレクションとの合成・型不足と未採用構文の拒否・未登録 Realization のテストを追加。既存 with やクラス等の意味論は変更しない。
+- SDD 第27〜29段階で組込み @staticmethod / @classmethod と明示 import された @dataclass を個別の限定機能として受理。通常メソッドとは異なる MethodKind、CLASS_RECEIVER、ClassMethodCall、ClassReceiverCreation と、dataclass から既存クラス構造への初期化合成を追加した。
+- CST_058〜060 / FRT_052〜055 と正常・拒否・継承・引数評価順・デフォルト値の回帰テストを追加。一般 Decorator、descriptor、dataclasses の一般的な自動生成、Target Realization は追加せず既存 with 等の契約も変更しない。
+- Frontend をパッケージ化し、明示的な型注釈正規化、デコレーター名の登録・import 別名解決、共通診断を分離。FRT_058 と内部境界のテストを追加。未知または未実装の効果は評価・推論せず拒否し、既存 Model / Realization の意味契約を変更しない。
+- FrontendOperations で領域間の内部操作シグネチャを明示し、ParseContext に宣言・クラス・制御フローの可変状態をまとめ、parse 毎に独立して初期化する構造へ変更。再解析・失敗時の状態隔離・モジュール境界の回帰テストを追加した。
+- Symbol の ValueType 同一性、Port 型の分離、Receiver 制約を検証するテストを追加。旧 Symbol コンストラクタ形式の後方互換層は設けない。Realization の契約選択・引数評価順などの改善は後続の作業とする。
+
+Changed:
+
+- 第50回として、実装検証用C Targetを独立配布予定のtargets/cからtests/support/c_realizerへ移管し、Python Realizerと共にHostの非配布参照実装へ統一。全C依存テスト・Contrace・例・開発設定を参照先に移行し、Host→Cの逆向きimport禁止、C Realizerの公開Host APIだけへの依存を監査。CのComposition・Admission・生成/拒否挙動を維持し、配布可能なWheelをHost単体に集約した。過去の独立C Wheel実験は履歴として保持。
+- 第45回として、第44回の明示的globalによる既宣言モジュール変数への書込みを、既存int/floatのAugAssignへ拡張。元のモジュールSymbolの同一性と既存の代入先一度・RHS前の読出し・再束縛契約を維持。併せて関数のローカル名事前収集にAugAssignを追加し、globalなしのcounter += 1をモジュール変数への書込みとして誤受理する名前束縛の問題を修正。Model・Admission・Targetは変更せず、未対応実現は引き続き拒否する。
+- 第44回として、Python Source Adapterが先頭global宣言による型付きモジュール変数の参照・単純再代入を限定的に受理。関数定義より前の型付きモジュール宣言に限定し、元のSymbol.scopeと同一性を維持したまま既存のAssignへ接続。後方/未知/Port名、衝突、途中/制御内宣言、ネスト関数/メソッド、nonlocal、複合代入/for対象を明示拒否。Model/TargetのConstructやRealizationは変更せず、共有状態の意味保存はTargetの責務に残す。
+- 第43回として、動的型表記Selectorを `(shape, spell)` の2引数に統一。spellは同じTargetの登録済み型表記を再帰的に呼び出し、未登録の内側型、不正な結果、循環参照を明示拒否する。Port型のSelectorとメモリPortサンプルを新規約へ移行し、固定型名とTarget分離・Modelの型意味を維持。
+- 第42回として、Modelが保持するValueType/PortTypeの完全な型形状をRealizationの型表記Selectorまで渡すよう変更。FunctionDefinitionにreturn_type Slotを追加し、Parameter・Initialize・FieldDefinitionと同じ型描画経路へ統一。tuple型Slotについてはseparators @= によるSlotごとの区切り指定を追加し、既定の改行配置、未登録型の明示拒否、インライン複数行拒否、既存Target出力を維持。Model型の意味・Frontend受理条件には変更なし。
+- 公開面再設計の第5工程で、Target宣言を `@realizes(element)` と `@naming` に完全統一。旧 `handles` / `binds` / `spells` の情報型・代入記述器・Registry分岐、`naming @= True` の代入互換処理を削除。テスト、デモ、現行仕様正本を更新し、通常の変換・契約検証・明示拒否を保持。外部直接Callを汎用的に公開する要素は引き続き未実装。
+- 公開面再設計の第4工程で、独立C Targetと非公開の開発用Python Realizerの全宣言を `@realizes(element)` / `@naming` に移行。Construct 17+24登録、直接Call `print`、Cの3基本型、各variant、命名規則の登録結果と生成・拒否挙動を移行前後で照合。Hostの旧 `handles` / `binds` / `spells` / `naming @= True` 互換機構、意味契約、Frontendの受理範囲は維持。
+- 第36回移行工程8でHostとC Targetの公開・配布境界を再監査。Host Wheelに混入していた開発専用のContrace契約モジュールをパッケージ探索対象から除外し、ソース側での開発テストは維持した。配布名と依存バージョン、Realizationの明示選択に関する回帰テストを追加。2つの独立Wheelを別環境へインストールし、C生成・コンパイル実行・未実装Constructの拒否を検証。Modelの意味契約やFrontendの受理範囲は変更しない。
+- 第36回移行工程7で、README・GLOSSARY・STATUSおよび現行仕様の用語を実装済み構成に照合して更新。Model/Interface/Constructの所有関係、HostとTarget Implementationの分類、Python側Interface MappingとModel型情報の違いを明記した。過去の変更履歴と監査台帳は当時の呼称を保持し、実装・意味契約・受理拒否条件は変更しない。
+- 第36回移行工程6で、旧Python Targetの実現規則を `src/pyinto/targets/python/` から `tests/support/python_realizer/` へ移し、非公開の開発用Realizerとして維持。既存テストとContrace設定を新しい参照先へ変更し、Host Wheelから除外した。SurfaceのAPI・言語構造の意味契約・既存実現範囲は不変。Pythonへの型保持や完全往復は新たに保証しない。
+- 第36回移行工程5で、C Language Implementationを同一リポジトリ内の `targets/c/src/pyinto_target_c/` へ移し、Hostの配布物との依存境界を明確化。`pyinto.realizations.c` のC Target再エクスポートを廃止し、`pyinto_target_c.c_bindings()` の明示的指定へ移行した。独立したC Target配布設定と依存方向のテストを追加し、既存のC生成・拒否契約・Model正規化は変更しない。別リポジトリへの移行と開発用Python Realizer整理は後工程。
+- 第36回移行工程4cで、Python側の外部API対応付け機構を `pyinto.interface_mapping` / `InterfaceMappingRegistry` 等へ改名。`convert()` / `PythonFrontend` の引数は `interface_mappings=`。登録された関数・クラス・メソッド・属性のModel化、Admission、拒否条件は維持。型情報に関わる `PortType` / `ValueKind.PORT_OBJECT` と `port:` キーは本工程では保留し、外部サンプルライブラリ固有の名前も維持。
+- 第36回移行工程4bで、実現規則の登録を`RealizationRegistry`に改名し、`pyinto.bindings/`を`pyinto.realizations/`へ移動。Template/Slot/Layout/Rendererを`realizations.layout`に配置し、公開変換API引数を`realizations=`、EmitContextの参照を`registry`に統一した。Target factoryの`c_bindings()`等とShikumiの`binds`は用途が異なるため維持し、対応する正常系・明示拒否と意味契約は変更しない。
+- 第36回移行工程4aで、言語構造用の標準契約台帳 `CORE_ADMISSION` を `LANGUAGE_ADMISSION` へ改名し、台帳内の一覧も `LANGUAGE_CONSTRUCT_NAMES` へ改名。`AdmissionRegistry.require_core()` は対象を特定Interfaceに限定しない `require_baseline()` へ改名した。既定台帳の登録内容・拡張可否・削除/置換拒否・未登録Construct拒否は変更しない。
+- 第36回移行工程3でプロジェクト配布名・Python import名前空間・例とテストのAdapterパッケージ名を `henkan` から `pyinto` へ変更。旧 `BindingRegistry` / `PortRegistry` / `CORE_ADMISSION` / Target Packの内部APIは維持し、意味契約と受理・拒否条件は変更しない。
+- 制御本体でのPort再束縛や宣言、try/except/finally直下の新規束縛、新規制御ローカル/暗黙for変数のlambda捕捉は受理しない。Symbolの関数/モジュール所有と既存Realizationを維持。Model表現能力拡張は一度区切り、次工程でPython Packを優先して実現/意味保存を検証する。
+- 型が曖昧な混合/空Tuple、未知Iterableの暗黙型決定、予約名の導入を拒否。標準Python/C Packには新規導入の実現規則を追加しない。反復種類・制御フローの従来契約は変更しない。
+- 既存の単一添字アクセスは維持。辞書・Tupleスライス、型不一致、未宣言名を拒否。標準Target Packは追加せず、Modelの正負テストと契約監査を追加。
+- 文字列のinは従来のStringContainsを維持し、型が合わない検索・非コレクション・比較チェーン内の所属を拒否する。Target Packレシピは追加せず、Model単独の正負テストを整備。
+- 異なる位置型・長さの不一致、未宣言・入れ子・スター付き対象の拒否、交換代入と重複した格納先を回帰試験で確認。標準Python/C Packは追加せず、Model優先の拡張とする。
+- 単一文字列printは従来Callで扱う一方、拡張printは新Constructの受理規則を必須にした。Python/C Target Packへの新レシピは追加せず、!r/!a、format spec、キーワード引数や任意オブジェクトの文字列化を拒否する。
+- PythonFrontendの既定IntrinsicRegistryは上記の標準表となる。明示したintrinsics引数は引き続き既定表全体を置換し、standard_intrinsics().extend(...)で明示拡張可能。既存専用Length等、ModelのIntrinsicCall構造、Python/C Target Packには変更を加えない。型変換の実行時例外、浮動小数点の文字列表現、Unicode case mappingはRealizationの未実装契約であり、supportsの宣言だけでは意味保存を証明できない。
+- IntrinsicCallは解決済みの具体的な静的署名を保持し、操作系列のvariantは型ごとに分割しない。候補照合で式を繰り返し正規化せず、推論・暗黙変換・Realizationの実装選択は行わない。既定Intrinsic表とPython/C標準Packの受理範囲は変更しない。
+- 既定のIntrinsic表は空のままとし、明示登録した非衝突操作のみPythonFrontend(intrinsics=...) / convert(intrinsics=...)で認識する。Construct提供者側のAdmissionに操作名とReceiver/引数の一回評価・評価順義務を追加。Python/C標準Pack、既存組込みの専用Construct、一般の推論・動的属性・オーバーロードは拡張しない。
+- 真の除算の数値契約、無限符号拡張に基づくビット意味とシフト回数の契約をConstruct提供者AdmissionRuleへ登録し、評価順契約を併用。Target固有の幅・シフト規則をModelに持ち込まず、C/Python標準Packの実現範囲は変更しない。監査台帳の追加と日本語正本を更新。
+- Construct提供者のAdmissionRuleへターゲット一回評価・read-before-RHS・再束縛と、比較チェーンの中間値一回評価・短絡・評価順を登録し、監査台帳も更新。どちらもPython/C標準Packにはレシピを追加しないModel優先開発とし、支持宣言や生成コードによる意味保存の一般的証明は主張しない。
+- 先頭の文字列定数だけを宣言文書として取得し、実行式と区別。クラス内の静的フィールド規則、限定dataclass、継承コンストラクタの制約を維持する。Target PackとRealization受理契約の実現範囲は変更しない。
+- C標準ComparisonはCで順序保証できない複合式を保守的に拒否し、既存の単純参照・整数リテラルを用いる比較は維持する。Python標準Comparisonは明示supportsを登録。Target固有の順序規則はModelへ持ち込まず、TemplatePlanと生成コードの意味保存は今後も個別検証の対象。
+- For / Withの既存Model構造・Frontend受理条件を変更せず、Cのrange反復とPythonのfor/withのTarget実行テストを追加。Comparisonの被演算子評価順は依然pendingとして明示し、第23回の検討対象に残す。
+- Core規則の上書き、未登録の派生Construct、Templateで無視される未登録子を拒否。realizeには明示的なadmission、convertにはPortRegistry経由の契約を渡す。Portデモの独立したConstructは提供側で宣言し、未宣言supportsを描画前に拒否する。既存のpending、脱糖表現、Modelの型・意味は変更しない。
+- ModelにTarget言語の評価規則を加えず、既存のModelの順序契約をRealizationの事前照合へ反映。評価順の未保証Targetを想定した負例テスト、文書正本からの境界・脱糖処理の監査計画を追加。単純なSlotの文字順はTarget実行順の証明にはならない。外部Constructの契約所有の移管、標準Packのpending解消、脱糖表現の変更は今後の工程に残した。
+- 既存の必須契約抽出をAdmissionRule宣言群に整理。BindingRegistryに追加の受理規則を指定しても標準ルールは維持し、支持未宣言の義務は従来どおり描画前に拒否する。短絡・finally・環境寿命などは未保護のまま明示し、ModelやFrontendの構文受理条件を変更しない。
+- 非Rangeを含めたForの純粋なModel構造を維持。C標準Packはrangeのみ、Python標準Packはrange/string/list/tuple/一般Iterableの出力に対応するが、supports宣言だけで意味保存は保証しない。
+- Realizationによる任意の意味保存を自動証明するものではなく、動的TemplatePlanの導出、レシピ自体の実行順序、super呼出の具体化などは個別の実行検証に委ねる。Model・Frontend受理条件と既存の標準Target Packの対応範囲は変更しない。
+- 第14回のフィールド監査は引き続き非規範的な台帳とし、今回の受理照合が監査済み全契約を網羅したことを意味しない。`supports` は作者の能力宣言であり正しい Target 実行を証明しない。反復・finally・短絡・クロージャー等の強制は未実装。
+- 第30段階後の基盤整理第13回として、クラス関連正規化を ClassNormalization Mixin から独立した ClassNormalizer と ClassServices の型付き依存へ移行。すべての正規化器を解析単位の独立オブジェクトとし、不要になった FrontendOperations のスタブ基底を撤去した。相互の操作参照は PythonFrontend の委譲入口を経由する。既存の意味契約と Realization は変更しない。
+- 第30段階後の基盤整理第12回として、関数宣言・呼出・lambda・レキシカル名前解決を、Mixin から独立した FunctionNormalizer に移した。FunctionServices に必要な他領域操作を限定し、PythonFrontend の委譲入口でクラス・文・式と接続する。解析 Context とデコレーター登録は解析単位で共有。既存の意味契約と Realization は変更していない。
+- 第30段階後の基盤整理第11回として、文・制御フロー・例外の正規化を独立した StatementNormalizer に移行。StatementServices に必要な他領域操作を限定し、PythonFrontend は Block/文の入口を委譲する構造に変更。既存の構文受理・拒否、Model・Realization 契約は維持した。
+- 第30段階後の基盤整理第10回として、式の正規化を PythonFrontend の多重継承から独立した ExpressionNormalizer に移行し、式が必要とする名前・関数・クラスの操作を ExpressionServices で明示した。ParseContext と Port 正規化器の解析単位共有、および状態再生成の単一化により責務境界を整理。ほかの Mixin と既存の意味契約・Realization は変更しない。
+- 第30段階後の基盤整理第9回として Port の式・宣言正規化を Frontend の Mixin から独立した PortNormalizer に移行。型付きの値・スコープ参照と ParseContext だけを受け取り、ほかの正規化メソッドを継承しない。型名・Port・デコレーターの明示 import 対応を ImportNormalizer に分離し、解析単位の寿命を明確化した。既存の受理・拒否条件と Model / Realization は変更しない。
+- 第30段階後の基盤整理第8回として DecoratorRegistry に class / method / function の効果正規化ハンドラー登録を追加。既存の3デコレーターも同機構へ移し、class の拡張計画を収集と構築の間で再利用するようにした。未登録効果の拒否を維持し、汎用の Python デコレーター実行・多段適用は追加しない。
+- 第30段階後の基盤整理第7回としてインスタンス式の受取手を正規化済み Value として後続処理へ渡し、フィールド参照・更新・メソッド呼出での二重正規化を解消。通常関数と lambda の状態退避復元を ParseContext の callable_scope に統合し、失敗時を含むスコープ寿命を明示した。
+- 第30段階後の基盤整理第6回として FunctionDefinition の構築時に所属する Return の値と戻り値型の整合性を検査するよう変更。分岐・ループ・With・Try 内を対象とし、入れ子関数は別に検証し、経路到達性の推論は行わない。Frontend の通常 return と lambda の型照合も共通の assignable を利用する形へ簡素化した。
+- 第30段階後の基盤整理第5回として構造的 Value の型形状を単一の value_type から導出する形へ整理し、重複する5種類の形状転送プロパティを削除。型規則に assignable を明示し、FunctionValueCall の派生インスタンス引数の受理を直接呼出と一致させた。型付きコレクションと Callable は厳密一致を維持。
+- 第30段階後の基盤整理第4回として FunctionSignature.return_type と Frontend 型注釈を ValueType 中心の単一表現へ変更。戻り型の分散フィールドと型注釈7要素タプルを撤去し、Port 注釈は通常の値型と分離した。既存の意味契約と Realization は変更しない。
+- 最初から独自記法を定義する案を保留し、通常の Python コードから Construct を構築する方針へ変更した。
+- Construct から C 固有のスニペット生成を取り除き、Shikumi 宣言で検証した交換可能な Language Binding へ移した。
+- Shikumi の規定体・登録・スニペット実現処理を名前付きモジュールへ分離し、Target Pack の宣言形式を追加した。
+- C のコード生成規則を `targets/c/pack.py` へ移動し、Construct 自身による再帰的合成は維持した。
+- Target Pack で Construct に宣言した `requires` を生成コンテキストで集め、Program へ反映できるようにした。
+- C の比較演算子スニペットの過剰な括弧を削減し、Clang の厳格な警告設定でも等価比較をコンパイルできるようにした。
+- 設計判断12に従い、すべての新規変数定義に型アノテーションを要求する Frontend へ切り替えた。
+- 設計判断13に従い、Construct の emit / Snippets / AAA+Cleanup 固定4スロットを廃止し、純粋な構造と Template / Slot の遅延合成に変更した。
+- Python と C の Target Pack、外部 Port アダプタを新方式へ書き換えた。
+- Port release を Cleanup スロット要求ではなく明示的な操作 Construct として実装した。
+- pytest と Shikumi-Contrace の契約を新しい実現方式に合わせて全面改訂した。
+- Frontend と Contrace / pytest を拡張し、`while` の型条件、入れ子、`else`、未対応構文の拒否を検証した。
+- C の `while ... else` Binding を中断判定付きの `for` 展開へ変更し、`break` と `continue` を伴う正常終了を検証した。
+- Shikumi-Contrace に新しい構造と実現の契約を追加。英語公開文書は生成しない方針を維持した。
+- Composer の Slot 合成順を Template 上の初出順で固定し、合成要求ごとにヘッダ・補助名の生成状態を初期化した。
+- 公開プロジェクト名と Python import 名を `henkan` へ変更し、例・契約・テストの参照を追従させた。
+- SDD 第2段階で Construct.parts() の Named/Layout 補助型依存を排し、Identifier・Symbol・tuple の純粋な Model 部品へ変更した。
+- 複数の with エントリーの区切りを Python Target の実現規則へ移し、出力 requirements を Composer 側の予約 Slot に分離した。
+- SDD 第3段階として Program.to_source() / to_c() を撤去し、変換入口を henkan.convert() / realize() に統一した。
+- テスト・例・Contrace の ProgramPort を独立した CompositionPort に移行し、Model の Realization 依存を排した。
+- SDD 第4段階で For.parts() の range 固有投影を撤去し、C range Binding が TemplatePlan で追加 Slot を提供するようにした。
+- SDD 第5段階で Program の要求ヘッダ用 Slot を Model の HOLES から除外し、Shikumi 宣言検証側で Program 固有の出力 Slot として扱うよう変更した。
+- Literal の構築時に int / str 以外の値を拒否し、Target 非依存の Model 値域を明確化した。
+- SDD 第6段階で HOLES を『実際に存在する Slot』ではなく『Construct が持ちうる Model 要素名』として定義し直し、静的要素検証を accepts_part_name() 経由へ変更した。
+- Comparison・Initialize・Assign・Branch・While の型・演算子の Model 不変条件を、parts() 呼び出し時ではなく構築時点で検証するよう変更した。
+- FRT_014 および第10段階の間接呼出拒否テストを、新しい個別の間接呼出契約の追加に合わせて更新。過去のテストデータ2件の誤ったタプル記述を修正。
+- 第30段階後のモジュール整理を開始。Construct を型・基底・値・型規則・コレクション・演算・制御・関数・クラスに分割し、単一ファイルの AST 検査と Contrace 実装走査も各定義モジュールを対象とするよう変更した。
+- 第30段階後のモジュール整理第2回として、巨大な frontend/parser.py の規則を classes / functions / statements / expressions / ports に分割。parser は解析の入口と import・型注釈接続を担う。
+- Contrace が新しい Frontend 定義モジュールも走査するよう構成を更新。受理・拒否条件および既存 Model / Realization の意味契約は維持。公開 API の互換用エイリアスや英語公開文書は追加していない。
+- モジュール整理第3回として Symbol の型情報を ValueType / PortType / None の単一の保持フィールドに変更。通常値と Port・組み込み宣言を混同せず、旧来の型種別・複合形状は派生属性にした。これを使用する型検査と署名生成の重複組み立てを削減した。
+
+Removed:
+
+- 以前の限定的な Branch v0（Python / Rust ソース生成）と、そのテスト・契約を撤去した。
+- 旧 ConstructStart / ExplicitCleanup と、AAA+Cleanup 前提の Snippets・4段階スニペット宣言を撤去した。
