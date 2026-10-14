@@ -321,9 +321,16 @@ def __pyinto_runtime__():
 def test_execution_does_not_inherit_future_annotations() -> None:
     # The runtime executor itself imports future annotations, but the trusted
     # source must retain its own annotation evaluation semantics.
+    #
+    # The hook reads its own annotations so the check holds across versions:
+    # before Python 3.14 the annotation is evaluated eagerly at definition time,
+    # and from 3.14 (PEP 649/749) it is evaluated lazily on access. Either way
+    # an undefined name raises NameError. If ``from __future__ import
+    # annotations`` leaked into the source, the annotation would instead be the
+    # string "UnknownType" and no error would be raised on any version.
     source = """
 def __pyinto_runtime__() -> UnknownType:
-    return 42
+    return __pyinto_runtime__.__annotations__["return"]
 """
     with pytest.raises(NameError, match="UnknownType"):
         convert(source, realizations=registry("required"))
