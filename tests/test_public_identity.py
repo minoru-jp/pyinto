@@ -39,7 +39,7 @@ def test_canonical_glossary_covers_shared_concepts() -> None:
 
 
 def test_current_architecture_glossary_and_readme() -> None:
-    """README describes the Host-only distribution and links to detailed guides."""
+    """Glossary and README present the current architecture and guide links."""
     documents = ROOT / "devdocs" / "canonical_documents"
     glossary = (documents / "GLOSSARY.md").read_text(encoding="utf-8")
     for term in (
@@ -59,14 +59,21 @@ def test_current_architecture_glossary_and_readme() -> None:
     assert "## taiou\n" not in glossary
 
     readme = (documents / "README.md").read_text(encoding="utf-8")
-    assert "Hostライブラリ" in readme
-    assert "予告や移行期間を設けず" in readme
-    assert "pip install pyinto" in readme
-    assert "バイナリファイル" in readme
-    assert "具体的なTarget Implementationを配布しません" in readme
-    assert "tests/support/" in readme
-    assert "](target_implementation/INDEX.md)" in readme
-    assert "工程6で整理します" not in readme
+    for concept in (
+        "# pyinto\n",
+        "pyinto Host",
+        "Construct Model",
+        "Target Implementation",
+        "pip install pyinto",
+        "__pyinto_runtime__",
+    ):
+        assert concept in readme
+    for guide in (
+        "](STATUS.md)",
+        "](target_implementation/INDEX.md)",
+        "](specification/INDEX.md)",
+    ):
+        assert guide in readme
 
 
 def test_realization_api_identity() -> None:
