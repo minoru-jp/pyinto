@@ -1,6 +1,6 @@
 """Fail unless the release tag identifies this checkout's declared version.
 
-Usage: python scripts/verify_release.py v0.0.1
+Usage: python scripts/verify_release.py v0.1.0
 """
 
 from __future__ import annotations

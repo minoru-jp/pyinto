@@ -12,7 +12,16 @@ from shikumi_devdoc.norms.document import title
     heading="title",
 )
 class CHANGELOG:
-    """0.0.1 開発段階の変更。正式リリース履歴ではない。"""
+    """0.1.0 の公開に向けた変更と以前の開発履歴。"""
+
+    class V0_1_0:
+        """Runtime情報を利用するTarget契約の初回公開。"""
+
+        title @= "0.1.0（Alpha）"
+        version @= "0.1.0"
+        added @= "信頼済み入力に限るRuntime情報経路を追加。トップレベル `__pyinto_runtime__()` を静的Construct Modelから除外し、Target Packの `pack_runtime`（required/forbidden/optional/ignored）で存在・利用を宣言する。Hostは静的AdmissionとDispatchの後で必要なときにPythonソースを実行し、戻り値RをSession.finish(R)へ渡す。optional不在はRUNTIME_ABSENTで表し、Model単独のrealize()はrequiredを拒否。Composition/Structuralと従来の静的Targetの挙動は維持。"
+        added @= "Target宣言 `pack_runtime_schema` を追加。通常の型オブジェクトでは単純なisinstance、検証関数では型と値を含む任意条件をboolで判定する。Hostがfinish(R)前に検証し、不適合、非boolの検証結果、検証時例外をRuntimeSchemaErrorで通知。required/optionalのみ指定可能とし、optional不在時は検証しない。ジェネリック式等は検証関数で扱い、Hostに独自型システムを導入しない。"
+        added @= "公開examples/runtime_trace.pyにRuntimeスキーマ宣言を追加。Runtimeの有無、型・値の検証、型式の拒否、失敗時finish非呼出と静的Target回帰のテストを追加。"
 
     class V0_0_1:
         """最初の開発用構成と、設計転換後の Construct 実験。"""

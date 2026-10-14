@@ -12,7 +12,7 @@ Canonical source: `devdocs/canonical_sources/status/canonical.py`
 
 ## 開発段階
 
-バージョン `0.0.1`、開発段階 Alpha。Template / Slot モデルへの基盤刷新を実装済み。後方互換性は保証しない。
+バージョン `0.1.0`、開発段階 Alpha。Template / Slot モデルへの基盤刷新を実装済み。後方互換性は保証しない。
 
 ## 現在の公開・開発構成（第50回）
 
@@ -37,6 +37,16 @@ Canonical source: `devdocs/canonical_sources/status/canonical.py`
   Dynamic IntrinsicCallのように候補が開いているものは完全列挙しない。
   個別射影の正しさを検査する包括的な契約体系、成果物への意味モード情報の
   自動埋め込みは未実装。
+- **Runtime情報経路**：トップレベルの `__pyinto_runtime__()` をConstruct Modelから
+  切り分け、Target Packの `pack_runtime`（`required` / `forbidden` /
+  `optional` / `ignored`、既定は `ignored`）で利用を宣言できる。
+  信頼済みソースだけをHostが通常のPythonで実行し、戻り値を必要に応じて
+  Session `finish(R)` に渡す。`optional` の関数不在時は公開センチネル
+  `RUNTIME_ABSENT` を渡し、`None` と区別する。Model単独の `realize()` は
+  `required` に対応しない。Hostは実行結果の意味を解釈しない。追加の `pack_runtime_schema`
+  はTargetが型オブジェクトか値検証関数で宣言でき、Hostが`finish(R)`の
+  直前に検証する。型の簡易表現は`isinstance`のみで扱い、値・複合型の
+  条件は検証関数に任せる。`optional`の不在時は検証を省略する。
 - **開発用C Realizer**：`tests/support/c_realizer/`に移管した
   非公開の参照実装。`from tests.support.c_realizer import c_bindings`は
   開発・テスト環境専用であり、別配布Wheelや自動選択は提供しない。

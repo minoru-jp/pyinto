@@ -8,20 +8,13 @@ Canonical source: `devdocs/canonical_sources/readme/canonical.py`
 
 # pyinto
 
-**pyintoは、型付きPythonコードをTarget非依存のModelへ正規化し、Target Implementationによって多様な成果物へ具体化するためのHostライブラリです。**
+Pythonコードをソースとして任意の形式(他言語コード、バイナリなどなんでも)及び内容へ変換するためのフレームワーク。
 
-## ⚠️ 開発状況について
+- ただし、任意のpythonコードをソースとして用いることはできない。
 
-pyintoは現在、**Alpha段階の実験的なライブラリ**です。
+## まだAlphaなので破壊的変更があります。
 
-API、Model、仕様、その他の設計は、今後の開発によって変更される可能性があります。
-
-特に、**予告や移行期間を設けず、後方互換性のない破壊的変更を行う場合があります。**
-
-現段階では、APIの安定性や既存バージョンとの互換性を保証していません。
-本番環境での利用や継続的な依存関係としての採用には十分注意してください。
-
-現在の実装状況については、[STATUS](STATUS.md) を参照してください。
+現在の実装状況については、[STATUS](STATUS.md) を参照。
 
 ## インストール
 
@@ -33,9 +26,9 @@ pip install pyinto
 
 ## 概念モデル
 
-pyintoは、Pythonコードから抽出した構造と意味を、特定の出力形式に依存しないModelとして扱います。
+pyintoは、Pythonコードから抽出した構造と意味を、特定の出力形式に依存しないModelとして扱う。
 
-Target Implementationは、このModelを基に成果物を生成します。
+Target Implementationは、このModelを基に成果物を生成する。
 
 ```text
               Typed Python Source
@@ -69,78 +62,34 @@ Target Implementationは、このModelを基に成果物を生成します。
                     Artifact
 ```
 
-この構造では、**Modelの構築とRealizationの実行制御をHostが担当し、成果物の構築と提出をTarget Implementationが担当します。**
+- Host側でModel化されていないpythonの構文はHost側に入力された時点で拒絶される。
+- また、Host側が受理したものでもTarget Implementation側が対応していない場合はやはり拒絶される。
+- つまり、このフレームワークでは任意のpythonコードを変換ソースとして使用することはできず、Model化されていて、かつTarget Implementation が対応している`制限されたpythonコード`のみを変換ソースとして使用することができる。
 
-## Hostの役割
+## 主な使い道とそれ以外の利用方法について
 
-pyinto Hostは、主に以下を提供します。
+### 他言語のソースファイルへの変換
+もともとこれを作成した動機であり、Target Implementationを作成することによって任意の言語への変換が可能になると想定している。しかし、現時点では完成された特定言語への変換を実現するTarget Implementationは存在していない。
 
-- **Frontend**：型付きPythonコードを静的に解析し、Modelへ正規化する。
-- **Construct Model**：プログラムの構造と意味をTarget非依存の形式で表現する。
-- **Admission**：ModelとRealizationに関する契約を検証する。
-- **Realization Dispatch**：Modelの構造や宣言された実行方式に従ってRealizerを呼び出す。
+#### ModelとRealizationの概念の組み合わせはライブラリにも適用する
+特定の言語への基本的な変換を実装しようとする際に、そこで使用するライブラリまで含めてその時点で実装する必要はない。
+python標準ライブラリであってもHostはModelを提供していない。
+ライブラリのModel化は必要に応じて行う。そして対応するRealizationを作る必要がある。
+このとき、Model化されたライブラリインターフェースは特定の言語に依存しなくてもよいため、言語に依存するのではなくて、「一般的な」処理手順に依拠する形で資産化できる可能性がある。しかし、これもまだ検証段階で、はっきり示すことはできない。
 
-Hostは成果物の種類や内部形式を規定しません。
+### python構文と、モジュールの実行結果を利用した成果物の生成
+制限されたpythonコードを前向きに捉えて、「ミニ言語」として利用する。また、拡張ではなくて、制限なので変換元コードは実行可能なものである。これらの性質（ASTを利用した静的解析要素と実行することによって得られる動的な状態）を組み合わせて、最終的な成果物を作成する。
+`__pyinto_runtime__` という名称で定義した関数はモジュール内で特別な意味を持ち、ASTの解析対象から外される。この関数の戻り値はTarget Implementationが最終的に成果物を生成する際にHostから与えられ、この情報を成果物に反映させることができる。
 
-## Target Implementationの役割
+### LLMとの協調開発について
+このようにHostを小さく保ち、それ以外を外側で全て定義するような方法はLLMによる実装を前提としている。
 
-Target Implementationは、Hostから提供されるModelの情報を利用し、目的に応じた成果物を生成します。
+Target Implementationの実装の仕方については [Target Implementation Guide](target_implementation/INDEX.md) を参照。
 
-各Target Implementationは、Realizationの定義、生成状態の管理、成果物の構築と提出を担当します。
-
-主な用途は、Pythonコードから他のプログラミング言語への変換です。
-
-ただし、**生成できる成果物の形式にHost側の制限はありません。**
-Target Implementationが実現できるものであれば、ソースコードだけでなく、
-構造化データ、図、文書、解析結果など、幅広い成果物を扱えます。
-**テキストに限らず、画像や実行形式などのバイナリファイルも生成対象にできます。**
-成果物が必ずファイルである必要もありません。
-
-また、Target Implementationは目的に応じて、Modelの実行意味を保存する方式と、
-必要な情報を射影する方式を選択できます。
-
-## Realizationの実行方式
-
-pyintoは、Realizerを呼び出すために2種類の方式を提供します。
-
-**Composition**
-
-Template/Slotに基づいてRealizationを再帰的に呼び出し、構造を合成する方式です。
-
-主に、プログラミング言語のソースコードなど、構造的なテキスト生成に適しています。
-
-**Structural**
-
-Modelの構造を走査し、対応するRealizerを呼び出す方式です。
-
-主に、Modelからの情報抽出、構造解析、図や構造化データの生成などに適しています。
-
-いずれの方式でも、最終的な成果物の管理はTarget Implementationが担当します。
-
-## Target Implementationについて
-
-**pyintoはHostライブラリであり、具体的なTarget Implementationを配布しません。**
-
-したがって、pyintoをインストールしただけでは、Cやその他のプログラミング言語への変換機能は利用できません。
-
-成果物を生成するには、目的に対応したTarget Implementationを別途用意する必要があります。
-
-Target Implementationは、pyintoが公開するModel、Realization、Admissionなどの
-インターフェースを利用して開発できます。
-
-リポジトリの `tests/support/` には、Hostの検証に使用するPythonおよびCのRealizerが含まれています。
-これらは開発・テスト用の参照実装であり、pyintoの配布パッケージには含まれません。
-
-Target Implementationの作成方法については、以下のガイドラインを参照してください。
-
-**[Target Implementation Guide](target_implementation/INDEX.md)**
-
-このガイドラインでは、Targetの設計、Realizationの宣言、Constructとvariant、
-意味契約、成果物の生成、検証方法を扱っています。
 
 ## ドキュメント
 
-詳細な情報は、以下の文書を参照してください。
+詳細な情報は、以下の文書を参照。
 
 | 文書 | 内容 |
 |---|---|

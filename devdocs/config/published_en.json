@@ -3,20 +3,20 @@
   "entries": {
     "README.md": {
       "published": "README.md",
-      "canonical_sha256": "ad28542b3c8445cad5aeda333ea4543885f644313205ec4882571c7a853f1878",
-      "english_sha256": "1de525b7312c8d4e827cced291f487b28616a7d8560d076a1385e622532d5c31",
+      "canonical_sha256": "eb4f97f9aeaf97fb63f85382c4bc4f83e8f09313d414424112d436af615c37de",
+      "english_sha256": "0f7e882bcded420f9f07a6bbc42d7090059b69269bf972a900d868c3b52ad99a",
       "coverage": "translated"
     },
     "STATUS.md": {
       "published": "STATUS.md",
-      "canonical_sha256": "39bb76ae0bc95b86428c132823cfc4bd2957528e4ba7abfbae9a3cb25a8f9b0f",
-      "english_sha256": "6cffca8175f418e550576a13fc0d7f10cca0f9aa01f1cfcd64f1c5ad6c1e0551",
+      "canonical_sha256": "118dd132ad9427ee5440a158f11a89aba1677072c7d548e7a43850e2c6fd0583",
+      "english_sha256": "77758523f200ec604c4d68583ed9683744bcdbfd728adf732fa4186a6ccb4afd",
       "coverage": "translated"
     },
     "CHANGELOG.md": {
       "published": "CHANGELOG.md",
-      "canonical_sha256": "d06322aa912e1b9fc466b2f5311dac919e9f6966ab14049e9a9a40f9196248e5",
-      "english_sha256": "f2a37e34f571d2a13bef8d935751ad177f57d32a4fc152d560d2031d8b5a515c",
+      "canonical_sha256": "abf2cc134ad8a6174592e5bc04a6304aee914b6d39866a6bc2ea820756ae5cd7",
+      "english_sha256": "7cf3f2659b23a442fbae5aca9bb5e41b5a43b3dce77f79fc50ec2cd933201753",
       "coverage": "translated"
     },
     "GLOSSARY.md": {
@@ -39,8 +39,8 @@
     },
     "specification/frontend.md": {
       "published": "docs/specification/frontend.md",
-      "canonical_sha256": "81cfbf83fe29ff43b8984cc549946d3e3998ca8aac3a80629f20fdaf3ccd3c7a",
-      "english_sha256": "69dd0daa0f53021399807276e6e05aee0d30d36ece1cae65c483a06d1c108d26",
+      "canonical_sha256": "83631870d59cf926c380017f79c8b8765d9a04e311863ce568886614cd905876",
+      "english_sha256": "84bca3ac7e63db40762b0b767e6a94dbc72d3e7f503f3b1aa7e503cf6b6a7c16",
       "coverage": "translated"
     },
     "specification/composition.md": {
@@ -51,8 +51,8 @@
     },
     "specification/conversion.md": {
       "published": "docs/specification/conversion.md",
-      "canonical_sha256": "49106fdfbcce4977bba341a6a06e912b2e5f7ec65514e0238e16949067898d56",
-      "english_sha256": "09723804fdf69aaf273696beb453cfab1c808ec800f50f8772c7315336a37ef2",
+      "canonical_sha256": "2f2bef2cacac62363a161f50f44a4317f3030e9705eb8fbe9186bad94bda3754",
+      "english_sha256": "9d6abe072c3e0145f36a2e4b1423962aadba07264022646ac800ea98edd04a76",
       "coverage": "translated"
     },
     "target_implementation/INDEX.md": {
@@ -63,14 +63,14 @@
     },
     "target_implementation/implementation-guide.md": {
       "published": "docs/target_implementation/implementation-guide.md",
-      "canonical_sha256": "fe59ccc559c9d5e64a170e079291b72665695d4eceee7626d16c483b4c4835d3",
-      "english_sha256": "2dbac55276dbd7b8bf3c6e42e8df7e734d3563b991c0d5880e50f289354de457",
+      "canonical_sha256": "17afdd8e1472e49850efcb80f2bc9f5573098c2f39626114929a57b4ff37240d",
+      "english_sha256": "e758e54a1eaa7141a5dd44be85b82cdcde60db42cd569dbd0eee22600ec42050",
       "coverage": "translated"
     },
     "target_implementation/declaration-reference.md": {
       "published": "docs/target_implementation/declaration-reference.md",
-      "canonical_sha256": "9f6164fd0a32b600b5a18009ec5c746fc6002ce1e03548578f653c11843af194",
-      "english_sha256": "4e2dbc4af87afa001c73dd4924e67ddcb96dac7157c927dddbb2190883421104",
+      "canonical_sha256": "48876ff7b05c3e056b83df3903553d4c9467fde2057e878f1b4739714d11cb82",
+      "english_sha256": "e74d5f1b3f0edeb00c7670f8634c59e32806cea5a89c68de1ba8ba0cb15a22b3",
       "coverage": "translated"
     },
     "target_implementation/construct-reference.md": {

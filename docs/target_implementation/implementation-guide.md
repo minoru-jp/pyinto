@@ -2,7 +2,7 @@
 
 ## Audience and prerequisites
 
-This guide is for authors of independent Target Implementations using the **pyinto 0.0.1 Alpha Host**. The task is not to manipulate the Python AST directly. Instead, receive the Construct Model normalized by the Frontend through the Host's dispatch rules and return artifacts owned by the Target.
+This guide is for authors of independent Target Implementations using the **pyinto 0.1.0 Alpha Host**. The task is not to manipulate the Python AST directly. Instead, receive the Construct Model normalized by the Frontend through the Host's dispatch rules and return artifacts owned by the Target.
 
 **Evidence priority:** public API signatures, [Declaration Reference](declaration-reference.md), [Construct / Variant Reference](construct-reference.md), [Admission Reference](admission-reference.md), and the [Specification](../specification/INDEX.md). The C/Python Realizers in `tests/support/` are reference implementations, not Host-distributed packages. Do **not** invent APIs, variants, contracts, or support for unknown features.
 
@@ -40,8 +40,14 @@ from pyinto.constructs import Construct
 from pyinto.interfaces import language as lang
 from pyinto.realizations.registry import EmitContext, RealizationRegistry
 from pyinto.realizations.regulation import (
-    pack_dispatch, pack_entries, pack_semantics, pack_session,
-    pack_target, pack_unhandled, realizes, visit,
+    pack_dispatch,
+    pack_entries,
+    pack_semantics,
+    pack_session,
+    pack_target,
+    pack_unhandled,
+    realizes,
+    visit,
 )
 
 
@@ -92,8 +98,14 @@ from pyinto.constructs import Block, ExpressionStatement, Literal, Program
 from pyinto.interfaces import language as lang
 from pyinto.realizations import RealizationRegistry, TextArtifactSession
 from pyinto.realizations.regulation import (
-    pack_dispatch, pack_entries, pack_session, pack_target,
-    realizes, render, template, variant,
+    pack_dispatch,
+    pack_entries,
+    pack_session,
+    pack_target,
+    realizes,
+    render,
+    template,
+    variant,
 )
 
 

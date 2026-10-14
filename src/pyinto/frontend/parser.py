@@ -42,6 +42,7 @@ from .expressions import ExpressionNormalizer
 from .functions import FunctionNormalizer
 from .imports import ImportNormalizer
 from .interface_mapping import InterfaceMappingNormalizer
+from .runtime import split_runtime
 from .statements import StatementNormalizer
 
 
@@ -86,9 +87,13 @@ class PythonFrontend:
         )
 
     def parse(self, source: str) -> Program:
+        """Normalize source, excluding its optional runtime magic function."""
+        tree, _ = split_runtime(ast.parse(source))
+        return self._parse_module(tree)
+
+    def _parse_module(self, tree: ast.Module) -> Program:
         self._reset_parse_state()
         self._decorators.clear_imports()
-        tree = ast.parse(source)
         # Synthetic lambda declarations must never collide with any source
         # spelling, including declarations encountered later in the module.
         self._context.names.source_names = {

@@ -241,3 +241,44 @@ kind: Operation
 output: `frozenset[str] | None`
 
 detail: See the [Construct / Variant Reference](construct-reference.md) for the list of built-in Constructs.
+
+## API_022
+
+Declare the optional runtime information channel. This is independent of Dispatch and Semantics; legacy Packs that omit it ignore the hook.
+
+name: `pack_runtime`
+
+kind: Value
+
+input: `'required' / 'forbidden' / 'optional' / 'ignored'` (default)
+
+detail: `required`: hook required, execute and call `finish(R)`. `forbidden`: reject a present hook. `optional`: execute a present hook and call `finish(R)`, otherwise call `finish(RUNTIME_ABSENT)`. `ignored`: allow a present hook but never execute it; call `finish()`. `required` and `optional` need a custom Session; the default text Session does not accept a runtime argument.
+
+## API_023
+
+Combine static Model information and a runtime value at Session finalization. The Target owns the runtime return type and its semantic checks.
+
+name: `__pyinto_runtime__() / RUNTIME_ABSENT / Session.finish(R)`
+
+kind: Operation
+
+input: Declare a synchronous zero-argument top-level function in trusted Python source. Import the public `RUNTIME_ABSENT` sentinel from `pyinto.realizations`.
+
+output: For `required` and present `optional`, the returned object R; for absent `optional`, `RUNTIME_ABSENT`.
+
+detail: Model-only `realize()` rejects `required` because it lacks source. Sessions for Targets not using runtime information keep their existing `finish()` contract.
+
+
+## API_024
+
+Target-defined schema for the runtime result's values and types. If omitted, the Host performs no schema validation of R.
+
+name: `pack_runtime_schema`
+
+kind: Value
+
+input: `type | Callable[[object], bool]`, e.g. `pack_runtime_schema @= ResultType` or `pack_runtime_schema @= validate_result`
+
+detail: Allowed only for `pack_runtime='required'` or `'optional'`. A plain class is checked only with `isinstance`. Parameterized generic expressions such as `list[int]` and union expressions are not accepted directly; express nested types or value constraints with a predicate.
+
+detail: Predicates take one argument R and must return a genuine `bool`. A false result, an invalid return type, or a validation exception raises `RuntimeSchemaError` before `Session.finish()`. An absent optional hook bypasses schema checking; a returned `None` does not.

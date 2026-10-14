@@ -8,6 +8,11 @@ from pyinto.admission import AdmissionRegistry
 from pyinto.constructs import Construct, ConstructError
 from pyinto.constructs.admission import LANGUAGE_ADMISSION
 from pyinto.realizations.registry import Composer, EmitContext, RealizationRegistry
+from pyinto.realizations.runtime import (
+    RUNTIME_ABSENT,
+    execute_runtime,
+    validate_runtime_schema,
+)
 
 
 def _children(value: object) -> Iterator[Construct]:
@@ -39,7 +44,15 @@ class RealizationHost:
         self.admission = admission if admission is not None else LANGUAGE_ADMISSION
         self.admission.require_baseline(LANGUAGE_ADMISSION)
 
-    def run(self, root: Construct) -> object:
+    def check_runtime(self, present: bool) -> None:
+        """Validate the selected Target's presence contract before dispatch."""
+        if self.registry.runtime == "required" and not present:
+            raise ValueError("Target requires __pyinto_runtime__ in the source")
+        if self.registry.runtime == "forbidden" and present:
+            raise ValueError("Target forbids __pyinto_runtime__ in the source")
+
+    def run(self, root: Construct, *, runtime_source: str | None = None) -> object:
+        self.check_runtime(runtime_source is not None)
         # Validate the full Model before allowing any Target factory side effects.
         self.admission.check_tree(root)
         session = self.registry.session_factory()
@@ -63,6 +76,22 @@ class RealizationHost:
                 self.registry, admission=self.admission, root=root, session=session
             )
             self._walk(root, context)
+        # No source is executed for purely static Targets. Optional absence is
+        # signalled explicitly, so a hook returning None remains unambiguous.
+        if self.registry.runtime in ("required", "optional"):
+            result = (
+                execute_runtime(runtime_source)
+                if runtime_source is not None
+                else RUNTIME_ABSENT
+            )
+            # Runtime absence is not a value to validate. A hook returning
+            # None, however, is a present value and must be checked.
+            if (
+                result is not RUNTIME_ABSENT
+                and self.registry.runtime_schema is not None
+            ):
+                validate_runtime_schema(result, self.registry.runtime_schema)
+            return finish(result)
         return finish()
 
     def _walk(self, node: Construct, ctx: EmitContext) -> None:

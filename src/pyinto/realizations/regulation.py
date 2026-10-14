@@ -19,6 +19,7 @@ from pyinto.constructs import Construct, Program
 from pyinto.constructs.types import PortType, ValueKind
 from pyinto.interfaces.builtins import PrintCall
 from pyinto.realizations.layout import holes_in
+from pyinto.realizations.runtime import is_runtime_schema
 
 # Realization target is a publicly exported Model element, not a string key.
 REALIZES = InformationType("target.realizes", object)
@@ -41,6 +42,8 @@ PACK_DISPATCH = InformationType("pack.dispatch", str)
 PACK_SESSION = InformationType("pack.session", object)
 PACK_SEMANTICS = InformationType("pack.semantics", str)
 PACK_UNHANDLED = InformationType("pack.unhandled", str)
+PACK_RUNTIME = InformationType("pack.runtime", str)
+PACK_RUNTIME_SCHEMA = InformationType("pack.runtime_schema", object)
 
 realizes = decorator(REALIZES)
 naming = decorator(NAMING)(True)
@@ -62,6 +65,8 @@ pack_dispatch = assignment(PACK_DISPATCH)
 pack_session = assignment(PACK_SESSION)
 pack_semantics = assignment(PACK_SEMANTICS)
 pack_unhandled = assignment(PACK_UNHANDLED)
+pack_runtime = assignment(PACK_RUNTIME)
+pack_runtime_schema = assignment(PACK_RUNTIME_SCHEMA)
 
 ROLE_TYPES = (REALIZES, NAMING)
 ENTRY_TYPES = (
@@ -273,6 +278,35 @@ def _pack_validity(view: SemanticView) -> Iterator[Diagnostic]:
             "Unhandled traverse needs structural dispatch and projection semantics",
             code="pack.unhandled",
         )
+    if item.has(PACK_RUNTIME) and item.values(PACK_RUNTIME)[0] not in (
+        "required",
+        "forbidden",
+        "optional",
+        "ignored",
+    ):
+        yield Diagnostic("Invalid Target runtime policy", code="pack.runtime")
+    if (
+        item.has(PACK_RUNTIME)
+        and item.values(PACK_RUNTIME)[0] in ("required", "optional")
+        and not item.has(PACK_SESSION)
+    ):
+        yield Diagnostic(
+            "Runtime-enabled Target needs an artifact session", code="pack.session"
+        )
+    if item.has(PACK_RUNTIME_SCHEMA):
+        schema = item.values(PACK_RUNTIME_SCHEMA)[0]
+        if not is_runtime_schema(schema):
+            yield Diagnostic(
+                "Runtime schema must be a type or a callable validator",
+                code="pack.runtime_schema",
+            )
+        if (
+            item.values(PACK_RUNTIME)[0] if item.has(PACK_RUNTIME) else "ignored"
+        ) not in ("required", "optional"):
+            yield Diagnostic(
+                "Runtime schema needs required or optional runtime policy",
+                code="pack.runtime_schema",
+            )
     if item.has(PACK_SESSION) and not callable(item.values(PACK_SESSION)[0]):
         yield Diagnostic(
             "Artifact session factory must be callable", code="pack.session"
@@ -299,6 +333,8 @@ pack_regulation = Shikumi(
         PACK_SESSION,
         PACK_SEMANTICS,
         PACK_UNHANDLED,
+        PACK_RUNTIME,
+        PACK_RUNTIME_SCHEMA,
     ),
     validators=(
         information_type_rule(PACK_TARGET),
@@ -307,6 +343,8 @@ pack_regulation = Shikumi(
         information_type_rule(PACK_SESSION),
         information_type_rule(PACK_SEMANTICS),
         information_type_rule(PACK_UNHANDLED),
+        information_type_rule(PACK_RUNTIME),
+        information_type_rule(PACK_RUNTIME_SCHEMA),
         _pack_validity,
     ),
 )

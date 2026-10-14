@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import ast
+
 from pyinto.admission import AdmissionRegistry
 from pyinto.constructs import Construct
 from pyinto.frontend import PythonFrontend
+from pyinto.frontend.runtime import split_runtime
 from pyinto.interface_mapping.registry import InterfaceMappingRegistry
 from pyinto.intrinsics import IntrinsicRegistry
 from pyinto.realizations.host import RealizationHost
@@ -51,12 +54,17 @@ def convert(
         )
     if intrinsics is not None and not isinstance(intrinsics, IntrinsicRegistry):
         raise TypeError("An IntrinsicRegistry is required")
-    return realize(
-        PythonFrontend(
-            interface_mappings=interface_mappings, intrinsics=intrinsics
-        ).parse(source),
-        realizations=realizations,
-        admission=admission
+    # Inspect the trusted source without executing it. Reject incompatible
+    # runtime contracts before the frontend or any Target callback runs.
+    static_tree, has_runtime = split_runtime(ast.parse(source))
+    selected_admission = (
+        admission
         if admission is not None
-        else (interface_mappings.admission if interface_mappings is not None else None),
+        else (interface_mappings.admission if interface_mappings is not None else None)
     )
+    host = RealizationHost(realizations, admission=selected_admission)
+    host.check_runtime(has_runtime)
+    model = PythonFrontend(
+        interface_mappings=interface_mappings, intrinsics=intrinsics
+    )._parse_module(static_tree)
+    return host.run(model, runtime_source=source if has_runtime else None)

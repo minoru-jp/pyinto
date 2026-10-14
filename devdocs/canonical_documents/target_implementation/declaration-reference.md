@@ -251,3 +251,41 @@ kind: Operation
 output: frozenset[str] | None
 
 detail: 正確な一覧はConstruct/Variant Reference参照
+
+## API_022
+
+Runtime情報経路の利用宣言。Dispatch/Semanticsとは独立であり、省略した既存Packは無視する。
+
+name: pack_runtime
+
+kind: Value
+
+input: 'required' / 'forbidden' / 'optional' / 'ignored'（既定）
+
+detail: required: 関数必須・実行してfinish(R)。forbidden: 存在を拒否。optional: あれば実行してfinish(R)、なければfinish(RUNTIME_ABSENT)。ignored: 存在は許可し、実行せずfinish()。required/optionalではカスタムSessionが必須。
+
+## API_023
+
+静的な構造と実行時の値をSession確定時に統合する。Runtime関数が戻した任意のオブジェクトの型と意味はTargetが検証する。
+
+name: __pyinto_runtime__() / RUNTIME_ABSENT / Session.finish(R)
+
+kind: Operation
+
+input: 信頼済み入力モジュールに同期・無引数のトップレベルdefを宣言。RUNTIME_ABSENTはpyinto.realizationsからimport。
+
+output: Runtimeがあるrequired/optionalでは戻り値R。optionalで関数がない場合はRUNTIME_ABSENT。
+
+detail: realize(model)はソースを持たずrequiredでは拒否。Runtimeが不要なTargetのSessionは従来のfinish()を維持。
+
+## API_024
+
+Runtime Resultの値と型に対するTarget定義のスキーマ。省略時はHostによるRのスキーマ検査なし。
+
+name: pack_runtime_schema
+
+kind: Value
+
+input: type | Callable[[object], bool]。例: pack_runtime_schema @= ResultType または pack_runtime_schema @= validate_result
+
+detail: required/optionalでのみ宣言可能。typeは単純なisinstance判定。list[int]等のジェネリック式とUnion式は不可。複雑な型・値の条件は検証関数で表す。, 検証関数の引数はRひとつで、戻り値は厳密なbool。偽、不正戻り値、検証例外はRuntimeSchemaErrorとなり、Session.finish()を呼ばない。optionalの不在時は検証せず、Noneは検証する。

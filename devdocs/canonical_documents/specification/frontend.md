@@ -738,3 +738,11 @@ title: 明示的globalによる既宣言モジュール変数への限定的再�
 level: MUST
 
 related: [CST_002](construct.md#cst_002), [CST_003](construct.md#cst_003), [CST_017](construct.md#cst_017)
+
+## FRT_074
+
+トップレベルの `def __pyinto_runtime__():` は特殊なRuntime関数としてASTの段階で切り分け、Construct Modelへ含めず、Frontendは本体のPython構文を正規化・検証しない。マジック関数は同期・引数なし・デコレータなし・単一定義とし、同名のクラス・async関数・直接代入、重複定義、引数つき/装飾つき定義を拒否する。PythonFrontend.parse単体でもこの定義を除外する。モデル化する通常部分は従来のFrontend受理条件に従い、特殊関数の除外はその他の型・名前解決の制約を緩和しない。
+
+title: Runtimeマジック関数の静的分離
+
+level: MUST

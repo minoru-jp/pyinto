@@ -212,31 +212,54 @@ def translated_status_errors(original: str, english: str) -> list[str]:
 
 
 def translated_changelog_errors(original: str, english: str) -> list[str]:
-    """Check unabridged historical entry coverage, not semantic equivalence."""
-    sections = ("Added", "Changed", "Removed")
+    """Check entry coverage and identifiers across *all* release sections."""
     errors: list[str] = []
-    if not re.search(r"(?m)^## 0\.0\.1", english):
-        errors.append("CHANGELOG: missing version section")
-    for name in sections:
-        section_pattern = rf"(?ms)^{name}:\s*\n(.*?)(?=^\w+:\s*$|\Z)"
-        source_match = re.search(section_pattern, original)
-        english_match = re.search(section_pattern, english)
-        if source_match is None or english_match is None:
-            errors.append(f"CHANGELOG: missing {name} section")
-            continue
-        source_items = re.findall(r"(?m)^\- .+$", source_match.group(1))
-        english_items = re.findall(r"(?m)^\- .+$", english_match.group(1))
-        if len(source_items) != len(english_items):
-            errors.append(f"CHANGELOG: {name} entry count differs")
-        for index, (japanese, translated) in enumerate(
-            zip(source_items, english_items, strict=False), start=1
-        ):
-            # Preserve machine-readable contract identifiers in each entry.
-            contract_pattern = r"(?:CST|FRT|CMP|CVT)_\d+"
-            if re.findall(contract_pattern, japanese) != re.findall(
-                contract_pattern, translated
+    version_heading = r"(?m)^## (\d+\.\d+\.\d+)"
+
+    def versions(text: str) -> list[tuple[str, str]]:
+        matches = list(re.finditer(version_heading, text))
+        return [
+            (
+                match.group(1),
+                text[match.end() : matches[index + 1].start()]
+                if index + 1 < len(matches)
+                else text[match.end() :],
+            )
+            for index, match in enumerate(matches)
+        ]
+
+    source_versions, english_versions = versions(original), versions(english)
+    if not source_versions or [v for v, _ in source_versions] != [
+        v for v, _ in english_versions
+    ]:
+        errors.append("CHANGELOG: missing or mismatched version section")
+
+    for (version, source), (_, translated) in zip(
+        source_versions, english_versions, strict=False
+    ):
+        for section in ("Added", "Changed", "Removed"):
+            pattern = rf"(?ms)^{section}:\s*\n(.*?)(?=^\w+:\s*$|\Z)"
+            jp = re.search(pattern, source)
+            en = re.search(pattern, translated)
+            if (jp is None) != (en is None):
+                errors.append(f"CHANGELOG: {version} missing {section} section")
+                continue
+            if jp is None or en is None:
+                continue
+            source_items = re.findall(r"(?m)^\- .+$", jp.group(1))
+            english_items = re.findall(r"(?m)^\- .+$", en.group(1))
+            if len(source_items) != len(english_items):
+                errors.append(f"CHANGELOG: {version} {section} entry count differs")
+            for index, (japanese, translated_item) in enumerate(
+                zip(source_items, english_items, strict=False), start=1
             ):
-                errors.append(f"CHANGELOG: {name} entry {index} contract IDs differ")
+                pattern_ids = r"(?:CST|FRT|CMP|CVT)_\d+"
+                if re.findall(pattern_ids, japanese) != re.findall(
+                    pattern_ids, translated_item
+                ):
+                    errors.append(
+                        f"CHANGELOG: {version} {section} entry {index} contract IDs differ"
+                    )
     if "not yet a complete translation" in english.lower():
         errors.append("CHANGELOG: synopsis disclaimer remains")
     return errors

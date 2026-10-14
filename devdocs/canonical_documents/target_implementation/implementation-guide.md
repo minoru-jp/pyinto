@@ -10,7 +10,7 @@ Canonical source: `devdocs/canonical_sources/target_implementation/implementatio
 
 対象と前提
 
-pyinto 0.0.1 Alpha の **Host** を利用する独立した Target Implementation の実装者向け。
+pyinto 0.1.0 Alpha の **Host** を利用する独立した Target Implementation の実装者向け。
 目的はPython ASTを直接処理することではなく、Frontendで正規化したConstruct Modelを
 Hostの呼び出し規則で受け取り、Target独自の成果物を提出すること。
 

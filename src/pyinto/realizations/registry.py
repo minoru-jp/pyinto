@@ -44,6 +44,8 @@ from pyinto.realizations.regulation import (
     NAMING,
     PACK_DISPATCH,
     PACK_ENTRIES,
+    PACK_RUNTIME,
+    PACK_RUNTIME_SCHEMA,
     PACK_SEMANTICS,
     PACK_SESSION,
     PACK_TARGET,
@@ -63,6 +65,7 @@ from pyinto.realizations.regulation import (
     pack_regulation,
     realization_target,
 )
+from pyinto.realizations.runtime import RuntimeSchema, is_runtime_schema
 
 _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 LayoutSelector = Callable[[Construct, "EmitContext"], str | Text | TemplatePlan]
@@ -185,6 +188,12 @@ class RealizationRegistry:
             unhandled=item.values(PACK_UNHANDLED)[0]
             if item.has(PACK_UNHANDLED)
             else "error",
+            runtime=item.values(PACK_RUNTIME)[0]
+            if item.has(PACK_RUNTIME)
+            else "ignored",
+            runtime_schema=cast(RuntimeSchema, item.values(PACK_RUNTIME_SCHEMA)[0])
+            if item.has(PACK_RUNTIME_SCHEMA)
+            else None,
         )
 
     def __init__(
@@ -196,6 +205,8 @@ class RealizationRegistry:
         session_factory: Callable[[], object] | None = None,
         semantics: str = "preservation",
         unhandled: str = "error",
+        runtime: str = "ignored",
+        runtime_schema: RuntimeSchema | None = None,
     ):
         if not target_name:
             raise ValueError("Target name must not be empty")
@@ -203,6 +214,15 @@ class RealizationRegistry:
             raise ValueError("Invalid Target dispatch mode")
         if semantics not in ("preservation", "projection"):
             raise ValueError("Invalid Target semantics mode")
+        if runtime not in ("required", "forbidden", "optional", "ignored"):
+            raise ValueError("Invalid Target runtime policy")
+        if runtime_schema is not None:
+            if not is_runtime_schema(runtime_schema):
+                raise TypeError("Runtime schema must be a type or a callable validator")
+            if runtime not in ("required", "optional"):
+                raise ValueError(
+                    "Runtime schema needs required or optional runtime policy"
+                )
         if unhandled not in ("error", "traverse"):
             raise ValueError("Invalid unhandled Construct policy")
         if unhandled == "traverse" and (
@@ -215,6 +235,8 @@ class RealizationRegistry:
             raise TypeError("Artifact session factory must be callable")
         if dispatch == "structural" and session_factory is None:
             raise ValueError("Structural Target needs an artifact session")
+        if runtime in ("required", "optional") and session_factory is None:
+            raise ValueError("Runtime-enabled Target needs an artifact session")
         recipes: dict[tuple[type[Construct], str], _Recipe] = {}
         calls: dict[str, _Recipe] = {}
         spellings: dict[str, str | TypeSelector] = {}
@@ -316,6 +338,8 @@ class RealizationRegistry:
         self.dispatch = dispatch
         self.semantics = semantics
         self.unhandled = unhandled
+        self.runtime = runtime
+        self.runtime_schema = runtime_schema
         self.session_factory: Callable[[], object] = (
             session_factory if session_factory is not None else TextArtifactSession
         )

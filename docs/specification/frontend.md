@@ -731,3 +731,11 @@ title: Restricted explicit global rebinding of already declared module variables
 level: MUST
 
 related: [CST_002](construct.md#cst_002), [CST_003](construct.md#cst_003), [CST_017](construct.md#cst_017)
+
+## FRT_074
+
+The Frontend separates a top-level `def __pyinto_runtime__():` from the AST before normalization. It does not include that function in the Construct Model and does not normalize or validate syntax inside its body. The hook must be a single, synchronous, zero-argument, undecorated function definition. Duplicate definitions, an identically named class, async function, direct assignment, or a definition with decorators or arguments are rejected. `PythonFrontend.parse()` also excludes this function. All other source declarations remain subject to the ordinary Frontend acceptance rules; the exclusion does not relax type or name-resolution contracts for the rest of the source.
+
+title: Static separation of the runtime magic function
+
+level: MUST

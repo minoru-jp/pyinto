@@ -1,7 +1,19 @@
 # pyinto Changelog
 
-Development changes for 0.0.1. This is not a formal release history.
+Release notes for 0.1.0 (Alpha), followed by prior development history.
 
+
+## 0.1.0 (Alpha)
+
+First public release of the optional trusted-source Runtime information channel.
+
+version: 0.1.0
+
+Added:
+
+- Added the trusted-source `__pyinto_runtime__()` hook, excluded from the static Model, with a four-way `pack_runtime` presence policy: `required`, `forbidden`, `optional`, and `ignored`. After static Admission and dispatch, the Host executes the source only when requested and passes R to `Session.finish(R)`. Absent optional hooks use `RUNTIME_ABSENT`; model-only `realize()` rejects `required`. Existing Composition, Structural, and default static behavior remain intact.
+- Added Target-owned `pack_runtime_schema` declarations for ordinary Python classes (`isinstance` only) or user-defined boolean predicates that can check both type and value constraints. The Host checks R before `finish(R)` and raises `RuntimeSchemaError` for rejection, non-boolean validator results, or validation exceptions. Only `required` and `optional` may declare a schema; absent optional hooks are not validated. Complex generic checks belong in predicates, not the Host.
+- Updated the public `examples/runtime_trace.py` example with a schema declaration and added regression coverage for runtime presence, value/type schema checking, invalid declarations, validation failures before `finish`, and static dispatch compatibility.
 
 ## 0.0.1 (Alpha, unpublished)
 
