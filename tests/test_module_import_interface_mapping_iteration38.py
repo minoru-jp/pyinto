@@ -121,7 +121,10 @@ def test_nested_module_function_lookups() -> None:
             "import demo_ports.device as d\nfor d in range(2):\n    print('x')",
             "reserved",
         ),
-        ("import demo_ports.device as d\nd = 1", ""),
+        # Rebinding a Port alias must stay rejected. It is currently rejected
+        # by the general "explicit type annotation" rule rather than by a
+        # Port-specific check; revisit this expectation if that rule changes.
+        ("import demo_ports.device as d\nd = 1", "explicit type annotation"),
         (
             "import demo_ports.device\nfrom demo_ports.device import is_ready as demo_ports",
             "Duplicate or reserved import alias",
@@ -141,7 +144,10 @@ def test_nested_module_function_lookups() -> None:
         ("import demo_ports.device as d\nd.is_ready(1)", "argument count"),
         ("import demo_ports.device as d\nd.is_ready(value=1)", "Only the reserved"),
         ("import demo_ports.device as d\nresult: int = d.is_ready()", "type"),
-        ("import demo_ports.device as d\nx: int = 1\nx: int = d.is_ready()", ""),
+        (
+            "import demo_ports.device as d\nx: int = 1\nx = d.is_ready()",
+            "Variable type cannot change",
+        ),
         ("x: int = 1\nimport demo_ports.device as d", "Unsupported statement"),
         (
             "def f() -> int:\n    import demo_ports.device\n    return 1",
