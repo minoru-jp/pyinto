@@ -26,12 +26,7 @@ from pyinto.constructs.admission import (
 from pyinto.frontend import PythonFrontend
 from pyinto.realizations.registry import EmitContext, RealizationRegistry
 from pyinto.realizations.regulation import (
-    pack_entries,
-    pack_target,
     realizes,
-    supports,
-    template,
-    variant,
 )
 from tests.test_realization_boundary_audit_iteration14 import _construct_types
 
@@ -188,9 +183,9 @@ def test_future_prototypes_support_open_keys_without_combinatorial_variants() ->
 
     @realizes(_NamedIntrinsic)
     class UpperOnly:
-        variant @= "str.upper"
-        template @= "${receiver}"
-        supports @= ("intrinsic.operation.upper",)
+        variant = "str.upper"
+        template = "${receiver}"
+        supports = ("intrinsic.operation.upper",)
 
     registry = RealizationRegistry("prototype", (UpperOnly,))
     admissions = LANGUAGE_ADMISSION.extend(
@@ -208,8 +203,8 @@ def test_future_prototypes_support_open_keys_without_combinatorial_variants() ->
 
     @realizes(_NamedIntrinsic)
     class NoSupport:
-        variant @= "str.upper"
-        template @= "${receiver}"
+        variant = "str.upper"
+        template = "${receiver}"
 
     unprotected = RealizationRegistry("prototype", (NoSupport,))
     with pytest.raises(ConstructError, match="intrinsic.operation.upper"):
@@ -217,8 +212,8 @@ def test_future_prototypes_support_open_keys_without_combinatorial_variants() ->
 
     @realizes(_AugmentedUpdate)
     class MissingUpdateContract:
-        template @= "${receiver}"
-        supports @= ("update.target.once",)
+        template = "${receiver}"
+        supports = ("update.target.once",)
 
     reg = RealizationRegistry("prototype", (MissingUpdateContract,))
     with pytest.raises(ConstructError, match="update.binding_or_mutation.explicit"):
@@ -228,8 +223,8 @@ def test_future_prototypes_support_open_keys_without_combinatorial_variants() ->
 
     @realizes(_ComparisonChain)
     class ChainWithoutShortCircuit:
-        template @= "${values}"
-        supports @= ("comparison.middle.once",)
+        template = "${values}"
+        supports = ("comparison.middle.once",)
 
     reg = RealizationRegistry("prototype", (ChainWithoutShortCircuit,))
     with pytest.raises(ConstructError, match="comparison.short_circuit"):
@@ -271,9 +266,9 @@ def test_extra_policies_cannot_replace_builtin_admission() -> None:
 
     @realizes(_NamedIntrinsic)
     class NamedOnly:
-        variant @= "str.upper"
-        supports @= ("intrinsic.operation.upper",)
-        template @= "${receiver}"
+        variant = "str.upper"
+        supports = ("intrinsic.operation.upper",)
+        template = "${receiver}"
 
     admissions = LANGUAGE_ADMISSION.extend(
         (AdmissionDeclaration(_NamedIntrinsic, (extra,)),)
@@ -291,7 +286,7 @@ def test_extra_policies_cannot_replace_builtin_admission() -> None:
 
     @realizes(type(call))
     class UnprotectedCall:
-        template @= "${arg0}"
+        template = "${arg0}"
 
     registry = RealizationRegistry("test", (UnprotectedCall,))
     with pytest.raises(ConstructError, match="call.arguments.bound"):
@@ -309,12 +304,12 @@ def test_pack_constructor_keeps_extension_admission_rules() -> None:
 
     @realizes(_NamedIntrinsic)
     class UpperWithoutSupport:
-        variant @= "str.upper"
-        template @= "${receiver}"
+        variant = "str.upper"
+        template = "${receiver}"
 
     class PrototypePack:
-        pack_target @= "prototype"
-        pack_entries @= (UpperWithoutSupport,)
+        target = "prototype"
+        entries = (UpperWithoutSupport,)
 
     registry = RealizationRegistry.from_pack(PrototypePack)
     admissions = LANGUAGE_ADMISSION.extend(

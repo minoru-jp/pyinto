@@ -28,7 +28,7 @@ from pyinto.constructs import (
 from pyinto.constructs.admission import LANGUAGE_ADMISSION
 from pyinto.frontend import PythonFrontend, UnsupportedPython
 from pyinto.realizations.registry import Composer, RealizationRegistry
-from pyinto.realizations.regulation import realizes, render, template, variant
+from pyinto.realizations.regulation import realizes
 from tests.support.c_realizer import c_bindings
 
 
@@ -140,12 +140,12 @@ def test_cmp_002_slot_reuse_and_order_documented_contract() -> None:
 
     @realizes(Pair)
     class PairRule:
-        template @= "${right}:${left}:${right}"
+        template = "${right}:${left}:${right}"
 
     @realizes(Literal)
     class LiteralRule:
-        variant @= "integer"
-        render @= choose_literal
+        variant = "integer"
+        render = choose_literal
 
     composer = Composer(
         RealizationRegistry("test", (PairRule, LiteralRule)),
@@ -162,7 +162,7 @@ def test_cmp_003_missing_slot_fails_without_guessing() -> None:
 
     @realizes(OnlyLeaf)
     class BadRule:
-        render @= lambda node, ctx: "${missing}"
+        render = lambda node, ctx: "${missing}"
 
     composer = Composer(
         RealizationRegistry("test", (BadRule,)),

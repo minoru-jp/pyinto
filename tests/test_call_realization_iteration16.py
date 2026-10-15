@@ -21,11 +21,6 @@ from pyinto.frontend import PythonFrontend
 from pyinto.realizations.registry import Composer, EmitContext, RealizationRegistry
 from pyinto.realizations.regulation import (
     realizes,
-    render,
-    requires,
-    supports,
-    template,
-    variant,
 )
 
 _COMPOUND_SOURCE = """
@@ -105,9 +100,9 @@ def test_each_missing_contract_fails_before_selector_or_requirements() -> None:
 
             @realizes(type(node))
             class Entry:
-                supports @= tuple(sorted(required_contracts(node) - {missing}))
-                render @= selector
-                requires @= "unsafe.h"
+                supports = tuple(sorted(required_contracts(node) - {missing}))
+                render = selector
+                requires = ("unsafe.h",)
 
             registry = RealizationRegistry("check", (Entry,))
             context = EmitContext(registry)
@@ -129,8 +124,8 @@ def test_super_and_virtual_need_distinct_declared_capabilities() -> None:
 
     @realizes(MethodCall)
     class Virtual:
-        supports @= tuple(sorted(required_contracts(calls["virtual"])))
-        template @= "${receiver}.${method}(z=${arg2}, x=${arg0})"
+        supports = tuple(sorted(required_contracts(calls["virtual"])))
+        template = "${receiver}.${method}(z=${arg2}, x=${arg0})"
 
     registry = RealizationRegistry("check", (Virtual,))
     assert registry.recipe(calls["virtual"], EmitContext(registry))
@@ -156,8 +151,8 @@ result: int = f(z=4, x=1)
 
         @realizes(FunctionCall)
         class Unsafe:
-            supports @= claimed
-            template @= source_template
+            supports = claimed
+            template = source_template
 
         registry = RealizationRegistry("test", (Unsafe,))
         with pytest.raises(ConstructError, match=problem):
@@ -165,13 +160,13 @@ result: int = f(z=4, x=1)
 
     @realizes(FunctionCall)
     class Safe:
-        supports @= claimed
-        template @= "f(z=${arg2},x=${arg0})"
+        supports = claimed
+        template = "f(z=${arg2},x=${arg0})"
 
     @realizes(Literal)
     class Number:
-        variant @= "integer"
-        render @= lambda node, _: repr(node.value)
+        variant = "integer"
+        render = lambda node, _: repr(node.value)
 
     registry = RealizationRegistry("test", (Safe, Number))
     assert Composer(registry).source(node) == "f(z=4,x=1)\n"
@@ -199,18 +194,18 @@ result: int = f(z=next_value(3), x=next_value(1))
 
     @realizes(FunctionCall)
     class Calls:
-        supports @= (
+        supports = (
             "call.arguments.bound",
             "call.arguments.reordered",
             "call.arguments.left_to_right",
             "call.defaults.omitted",
         )
-        render @= choose
+        render = choose
 
     @realizes(Literal)
     class Numbers:
-        variant @= "integer"
-        render @= lambda node, _: repr(node.value)
+        variant = "integer"
+        render = lambda node, _: repr(node.value)
 
     rendered = Composer(RealizationRegistry("python-test", (Calls, Numbers))).source(
         outer
@@ -247,7 +242,7 @@ def test_combined_dispatch_and_argument_layouts_are_composed() -> None:
 
     @realizes(MethodCall)
     class Methods:
-        supports @= (
+        supports = (
             "call.arguments.bound",
             "call.arguments.reordered",
             "call.arguments.left_to_right",
@@ -256,52 +251,52 @@ def test_combined_dispatch_and_argument_layouts_are_composed() -> None:
             "method.dispatch.super",
             "method.lookup.lexical_base",
         )
-        render @= choose_method
+        render = choose_method
 
     @realizes(InstanceCreation)
     class Constructors:
-        supports @= (
+        supports = (
             "call.arguments.bound",
             "call.arguments.reordered",
             "call.arguments.left_to_right",
             "call.defaults.omitted",
         )
-        template @= "${class_name}(z=${arg2},x=${arg0})"
+        template = "${class_name}(z=${arg2},x=${arg0})"
 
     @realizes(ClassMethodCall)
     class ClassCalls:
-        supports @= (
+        supports = (
             "call.arguments.bound",
             "call.arguments.reordered",
             "call.arguments.left_to_right",
             "call.defaults.omitted",
             "class_receiver.runtime_identity",
         )
-        template @= "${class_source}.${method}(z=${arg2},x=${arg0})"
+        template = "${class_source}.${method}(z=${arg2},x=${arg0})"
 
     @realizes(ClassReceiverCreation)
     class Factories:
-        supports @= (
+        supports = (
             "call.arguments.bound",
             "call.arguments.reordered",
             "call.arguments.left_to_right",
             "call.defaults.omitted",
             "class_receiver.runtime_identity",
         )
-        template @= "${receiver}(z=${arg2},x=${arg0})"
+        template = "${receiver}(z=${arg2},x=${arg0})"
 
     @realizes(Reference)
     class References:
-        template @= "${name}"
+        template = "${name}"
 
     @realizes(ClassReference)
     class Classes:
-        template @= "${class_name}"
+        template = "${class_name}"
 
     @realizes(Literal)
     class Numbers:
-        variant @= "integer"
-        render @= lambda node, _: repr(node.value)
+        variant = "integer"
+        render = lambda node, _: repr(node.value)
 
     registry = RealizationRegistry(
         "trace",
@@ -351,18 +346,18 @@ result: int = f(z=next_value(3), x=next_value(1))
 
     @realizes(FunctionCall)
     class Calls:
-        supports @= (
+        supports = (
             "call.arguments.bound",
             "call.arguments.reordered",
             "call.arguments.left_to_right",
             "call.defaults.omitted",
         )
-        render @= plan
+        render = plan
 
     @realizes(Literal)
     class Numbers:
-        variant @= "integer"
-        render @= lambda node, _: repr(node.value)
+        variant = "integer"
+        render = lambda node, _: repr(node.value)
 
     output = Composer(RealizationRegistry("python-test", (Calls, Numbers))).source(
         outer

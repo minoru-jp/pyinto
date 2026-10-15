@@ -11,6 +11,7 @@ from typing import Protocol
 
 from pyinto.constructs import (
     Absolute,
+    AddressOf,
     Arithmetic,
     BooleanAggregate,
     BooleanLiteral,
@@ -22,6 +23,7 @@ from pyinto.constructs import (
     Comparison,
     ComparisonChain,
     ConditionalExpression,
+    Construct,
     ConstructError,
     DictElement,
     DictEntry,
@@ -48,9 +50,21 @@ from pyinto.constructs import (
     ListValue,
     Literal,
     Membership,
+    MemoryBorrow,
+    MemoryCopy,
+    MemoryFill,
+    MemoryLength,
+    MemoryNew,
+    MemoryNewBuffer,
+    MemoryRelease,
+    MemoryResize,
     MethodCall,
+    NoneAlias,
+    NoneAliasComparison,
     NoneLiteral,
     ParameterRole,
+    PointerLoad,
+    PointerStore,
     Range,
     Reference,
     SliceValue,
@@ -66,17 +80,22 @@ from pyinto.constructs import (
     ValueKind,
     ValueType,
 )
+from pyinto.constructs.type_rules import is_none_alias
+from pyinto.constructs.types import NONE_ALIASES
 from pyinto.intrinsics import IntrinsicRegistry
 
 from .context import ParseContext
-from .errors import reject
+from .errors import UnsupportedPython, reject
 from .interface_mapping import InterfaceMappingNormalizer
+from .kinds import MEMORY_OPERATIONS, memory_operation, pointer_operation
 
 
 class ExpressionServices(Protocol):
     """Only non-expression operations that can be requested by expressions."""
 
     def _lookup_symbol(self, name: str) -> Symbol | None: ...
+
+    def _annotation(self, node: ast.expr) -> tuple[str, ValueType | None]: ...
 
     def _lookup_function(self, name: str) -> FunctionSignature | None: ...
 
@@ -178,7 +197,7 @@ class ExpressionNormalizer:
     def _unshadowed_intrinsic_name(self, name: str) -> bool:
         """Only unbound direct names denote provider-defined operations.
 
-        Existing declarations, imported Ports and classes always take priority.
+        Existing declarations, imported mapped names and classes always take priority.
         """
         return (
             self._services._lookup_function(name) is None
@@ -302,6 +321,84 @@ class ExpressionNormalizer:
             if name == "abs":
                 return Absolute(operands[0])
             return Extremum(name, operands)
+        except ValueError as exc:
+            raise reject(node, str(exc)) from exc
+
+    def _pointer_value(self, node: ast.Call, operation: str) -> Value:
+        """``Pointer.address(x)`` / ``Pointer.load(p)`` as Model values."""
+        if operation == "store":
+            raise reject(node, "Pointer.store is a statement, not a value")
+        argument = node.args[0]
+        try:
+            if operation == "address":
+                if not isinstance(argument, ast.Name):
+                    raise reject(argument, "Pointer.address requires a variable name")
+                target = self._value(argument)
+                if not isinstance(target, Reference):
+                    raise reject(argument, "Pointer.address requires a variable name")
+                return AddressOf(target)
+            return PointerLoad(self._value(argument))
+        except UnsupportedPython:
+            raise
+        except ValueError as exc:
+            raise reject(node, str(exc)) from exc
+
+    def _memory_type(self, node: ast.expr) -> ValueType:
+        _, element = self._services._annotation(node)
+        if element is None:
+            raise reject(node, "Memory operations require a value type")
+        return element
+
+    def _memory_value(self, node: ast.Call, operation: str) -> Value:
+        """``Memory.new`` / ``new_buffer`` / ``length`` / ``borrow`` as values."""
+        if MEMORY_OPERATIONS[operation][1]:
+            raise reject(node, f"Memory.{operation} is a statement, not a value")
+        arguments = node.args
+        try:
+            if operation == "new":
+                element = self._memory_type(arguments[0])
+                return MemoryNew(element, self._value(arguments[1], element))
+            if operation == "new_buffer":
+                element = self._memory_type(arguments[0])
+                return MemoryNewBuffer(
+                    element,
+                    self._value(arguments[1]),
+                    self._value(arguments[2], element),
+                )
+            if operation == "length":
+                return MemoryLength(self._value(arguments[0]))
+            return MemoryBorrow(self._value(arguments[0]))
+        except UnsupportedPython:
+            raise
+        except ValueError as exc:
+            raise reject(node, str(exc)) from exc
+
+    def memory_statement(self, node: ast.Call, operation: str) -> Construct:
+        """``Memory.release`` / ``resize`` / ``copy`` / ``fill`` as statements."""
+        arguments = node.args
+        try:
+            if operation == "release":
+                return MemoryRelease(self._value(arguments[0]))
+            if operation == "resize":
+                if not isinstance(arguments[0], ast.Name):
+                    raise reject(arguments[0], "Memory.resize requires a variable name")
+                target = self._value(arguments[0])
+                if not isinstance(target, Reference):
+                    raise reject(arguments[0], "Memory.resize requires a variable name")
+                return MemoryResize(target, self._value(arguments[1]))
+            if operation == "copy":
+                return MemoryCopy(self._value(arguments[0]), self._value(arguments[1]))
+            return MemoryFill(self._value(arguments[0]), self._value(arguments[1]))
+        except UnsupportedPython:
+            raise
+        except ValueError as exc:
+            raise reject(node, str(exc)) from exc
+
+    def pointer_store(self, node: ast.Call) -> PointerStore:
+        try:
+            return PointerStore(self._value(node.args[0]), self._value(node.args[1]))
+        except UnsupportedPython:
+            raise
         except ValueError as exc:
             raise reject(node, str(exc)) from exc
 
@@ -562,6 +659,12 @@ class ExpressionNormalizer:
                 raise reject(node, "interface mapping property must produce a Value")
             return result
         if isinstance(node, ast.Call):
+            operation = pointer_operation(node, self._context.names.kind_aliases)
+            if operation is not None:
+                return self._pointer_value(node, operation)
+            operation = memory_operation(node, self._context.names.kind_aliases)
+            if operation is not None:
+                return self._memory_value(node, operation)
             if self._interface_mapping_normalizer.is_module_call(node):
                 return self._interface_mapping_normalizer.mapped_call(node)
             if isinstance(node.func, ast.Name):
@@ -590,7 +693,7 @@ class ExpressionNormalizer:
                         return self._services._instance_member_call(
                             node, typed_receiver
                         )
-                    if typed_receiver.kind is ValueKind.PORT_OBJECT:
+                    if typed_receiver.kind is ValueKind.MAPPED_OBJECT:
                         raise reject(node, "Intrinsic receiver needs a typed Value")
                     return self._declared_intrinsic_call(node, typed_receiver)
                 receiver = self._instance_receiver(node.func.value)
@@ -647,6 +750,11 @@ class ExpressionNormalizer:
                         return Reference(signature.value_symbol)
                     except ConstructError as exc:
                         raise reject(node, str(exc)) from exc
+                word = self._context.names.kind_aliases.get(node.id)
+                if word in NONE_ALIASES:
+                    return NoneAlias(word)
+                if word is not None:
+                    raise reject(node, f"Kind {word} is not a value")
                 raise reject(node, f"Unresolved name: {node.id!r}")
             return Reference(symbol)
         if isinstance(node, ast.Compare):
@@ -696,6 +804,11 @@ class ExpressionNormalizer:
             if operator is None:
                 raise reject(node, "Unsupported comparison operator")
             left, right = self._value(node.left), self._value(node.comparators[0])
+            if is_none_alias(left.value_type) or is_none_alias(right.value_type):
+                try:
+                    return NoneAliasComparison(left, operator, right)
+                except ValueError as exc:
+                    raise reject(node, str(exc)) from exc
             if left.kind is ValueKind.INTEGER and right.kind is ValueKind.INTEGER:
                 return Comparison(left, operator, right)
             if left.kind is ValueKind.FLOAT and right.kind is ValueKind.FLOAT:

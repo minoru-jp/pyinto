@@ -18,7 +18,7 @@ from pyinto.constructs import (
     With,
 )
 from pyinto.realizations.registry import RealizationRegistry
-from pyinto.realizations.regulation import realizes, template
+from pyinto.realizations.regulation import realizes
 from tests.model_sources import construct_trees
 from tests.support.c_realizer import c_bindings
 from tests.support.python_realizer.pack import python_bindings
@@ -34,15 +34,15 @@ def test_cst_010_model_does_not_claim_output_requirements() -> None:
 def test_cmp_011_program_requirements_remain_a_composition_feature() -> None:
     @realizes(Program)
     class ProgramWithRequirements:
-        template @= "${requirements}${body}"
+        template = "${requirements}${body}"
 
     @realizes(Program)
     class ProgramWithUnknownSlot:
-        template @= "${unknown}${body}"
+        template = "${unknown}${body}"
 
     @realizes(Block)
     class NonProgramWithRequirements:
-        template @= "${requirements}${children}"
+        template = "${requirements}${children}"
 
     RealizationRegistry("test", (ProgramWithRequirements,))
     with pytest.raises(ValueError, match="unknown template hole"):

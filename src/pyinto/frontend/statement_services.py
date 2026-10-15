@@ -14,6 +14,7 @@ from pyinto.constructs import (
     ClassMethodCall,
     ClassReceiverCreation,
     ClassSignature,
+    Construct,
     FieldDefinition,
     FunctionCall,
     FunctionDefinition,
@@ -83,3 +84,7 @@ class StatementServices(Protocol):
     def _stringify(self, value: Value, node: ast.AST) -> Value: ...
 
     def _value(self, node: ast.expr, expected: ValueType | None = None) -> Value: ...
+
+    def _pointer_store(self, node: ast.Call) -> Construct: ...
+
+    def _memory_statement(self, node: ast.Call, operation: str) -> Construct: ...

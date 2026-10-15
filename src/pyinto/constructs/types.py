@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 
@@ -15,7 +15,7 @@ class ValueKind(Enum):
     FLOAT = "float"
     STRING = "string"
     BOOLEAN = "boolean"
-    PORT_OBJECT = "port_object"
+    MAPPED_OBJECT = "mapped_object"
     ANY = "any"
     OBJECT = "object"
     ITERABLE = "iterable"
@@ -83,8 +83,14 @@ class ValueType:
     list_type: ListType | None = None
     dict_type: DictType | None = None
     instance_type: InstanceType | None = None
+    # A Host-uninterpreted kind label (``Int[32]``, ``Pointer[T]`` ...).
+    # It never takes part in equality: type compatibility is decided by the
+    # Python-side shape alone, and the label is only carried to Targets.
+    label: KindLabel | None = field(default=None, compare=False)
 
     def __post_init__(self) -> None:
+        if self.label is not None and not isinstance(self.label, KindLabel):
+            raise ConstructError("Kind label must be a KindLabel")
         if (self.kind is ValueKind.FUNCTION) != (self.callable_type is not None):
             raise ConstructError(
                 "Function value types require exactly one callable shape"
@@ -107,12 +113,16 @@ class ValueType:
             self.instance_type, InstanceType
         ):
             raise ConstructError("Instance type must identify a class")
-        if self.kind is ValueKind.PORT_OBJECT:
+        if self.kind is ValueKind.MAPPED_OBJECT:
             raise ConstructError(
-                "Callable signatures cannot contain unshaped Port objects"
+                "Callable signatures cannot contain unshaped mapped objects"
             )
 
     def annotation(self) -> str:
+        if self.label is not None:
+            if self.label.name == "Function" and self.callable_type is not None:
+                return "Function" + self.callable_type.annotation()[len("Callable") :]
+            return self.label.annotation()
         if self.callable_type is not None:
             return self.callable_type.annotation()
         if self.tuple_type is not None:
@@ -136,6 +146,47 @@ class ValueType:
         if self.kind not in spelling:
             raise ConstructError("This value type has no callable annotation")
         return spelling[self.kind]
+
+
+NONE_ALIASES: frozenset[str] = frozenset({"Void", "Nil", "Null"})
+"""Kind vocabulary words that are aliases of ``None`` on the Python side."""
+
+CLASS_LABELS: frozenset[str] = frozenset({"Interface", "MixIn", "Implements"})
+"""Kind vocabulary words used as class decorators."""
+
+
+@dataclass(frozen=True)
+class KindLabel:
+    """One kinds vocabulary word with its arguments, uninterpreted.
+
+    The Host neither defines nor checks what a word means (size, layout,
+    overflow, indirection ...). It only records the spelling so that a Target
+    can choose a concrete representation. Arguments are positive integers or
+    nested Model value types, exactly as written in the source annotation.
+    """
+
+    name: str
+    arguments: tuple[int | ValueType, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.name, str) or not self.name.isidentifier():
+            raise ConstructError("Kind name must be an identifier")
+        if not isinstance(self.arguments, tuple) or any(
+            not (isinstance(item, ValueType) or (type(item) is int and item > 0))
+            for item in self.arguments
+        ):
+            raise ConstructError(
+                "Kind arguments must be positive integers or value types"
+            )
+
+    def annotation(self) -> str:
+        if not self.arguments:
+            return self.name
+        spelled = ", ".join(
+            str(item) if isinstance(item, int) else item.annotation()
+            for item in self.arguments
+        )
+        return f"{self.name}[{spelled}]"
 
 
 @dataclass(frozen=True)
@@ -178,13 +229,13 @@ class TupleType:
                 self.variadic_element_type, ValueType
             ) or self.variadic_element_type.kind in {
                 ValueKind.NONE,
-                ValueKind.PORT_OBJECT,
+                ValueKind.MAPPED_OBJECT,
             }:
                 raise ConstructError("Variadic tuple needs a supported element type")
         if any(not isinstance(t, ValueType) for t in self.element_types):
             raise ConstructError("Tuple elements require valid value types")
         if any(
-            t.kind in {ValueKind.NONE, ValueKind.PORT_OBJECT}
+            t.kind in {ValueKind.NONE, ValueKind.MAPPED_OBJECT}
             for t in self.element_types
         ):
             raise ConstructError("Tuple elements require supported value types")
@@ -206,7 +257,7 @@ class ListType:
     def __post_init__(self) -> None:
         if not isinstance(self.element_type, ValueType) or self.element_type.kind in {
             ValueKind.NONE,
-            ValueKind.PORT_OBJECT,
+            ValueKind.MAPPED_OBJECT,
         }:
             raise ConstructError("List requires a supported element value type")
 
@@ -232,7 +283,7 @@ class DictType:
             raise ConstructError("Dict keys require int or str ValueType")
         if not isinstance(self.value_type, ValueType) or self.value_type.kind in {
             ValueKind.NONE,
-            ValueKind.PORT_OBJECT,
+            ValueKind.MAPPED_OBJECT,
         }:
             raise ConstructError("Dict values require a supported ValueType")
 
@@ -241,40 +292,36 @@ class DictType:
 
 
 @dataclass(frozen=True)
-class PortType:
-    """Declared Python Port shape, not a target representation or identity."""
+class MappedType:
+    """Declared shape of a mapped object, not a target representation or identity."""
 
     source: str
     variant: str
-    constraints: tuple[tuple[str, int], ...]
 
     @property
     def key(self) -> str:
-        return f"port:{self.source}.{self.variant}"
-
-    def options(self) -> dict[str, int]:
-        return dict(self.constraints)
+        return f"mapped:{self.source}.{self.variant}"
 
 
 @dataclass(frozen=True)
 class Symbol:
     """A lexical binding with one declared type.
 
-    Built-in callables have no value type; external Port instances have a
-    PortType instead of a regular ValueType. Neither case is silently coerced
+    Built-in callables have no value type; mapped objects have a
+    MappedType instead of a regular ValueType. Neither case is silently coerced
     into an ordinary value type.
     """
 
     name: str
-    type: ValueType | PortType | None
+    type: ValueType | MappedType | None
     annotation: str | None = None
     # Lexical owner of a declaration. Empty for module-level bindings.
     scope: tuple[str, ...] = ()
     role: ParameterRole = ParameterRole.ORDINARY
 
     def __post_init__(self) -> None:
-        if self.type is not None and not isinstance(self.type, (ValueType, PortType)):
-            raise ValueError("Symbol requires a declared ValueType or PortType")
+        if self.type is not None and not isinstance(self.type, (ValueType, MappedType)):
+            raise ValueError("Symbol requires a declared ValueType or MappedType")
         if not isinstance(self.role, ParameterRole):
             raise TypeError("Unknown parameter role")
         if self.role is ParameterRole.VARIADIC and (
@@ -297,17 +344,17 @@ class Symbol:
     def kind(self) -> ValueKind | None:
         if isinstance(self.type, ValueType):
             return self.type.kind
-        return ValueKind.PORT_OBJECT if isinstance(self.type, PortType) else None
+        return ValueKind.MAPPED_OBJECT if isinstance(self.type, MappedType) else None
 
     @property
     def value_type(self) -> ValueType:
         if not isinstance(self.type, ValueType):
-            raise ConstructError("Port and built-in symbols have no ValueType")
+            raise ConstructError("Mapped and built-in symbols have no ValueType")
         return self.type
 
     @property
-    def port_type(self) -> PortType | None:
-        return self.type if isinstance(self.type, PortType) else None
+    def mapped_type(self) -> MappedType | None:
+        return self.type if isinstance(self.type, MappedType) else None
 
     @property
     def callable_type(self) -> CallableType | None:

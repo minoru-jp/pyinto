@@ -1,9 +1,9 @@
-"""Stage 4c: the mapping API is named independently of model PortType identity."""
+"""Stage 4c: the mapping API is named independently of model MappedType identity."""
 
 import pytest
 
 from pyinto import PythonFrontend, convert
-from pyinto.constructs import BooleanLiteral, PortType, ValueKind
+from pyinto.constructs import BooleanLiteral, MappedType, ValueKind
 from pyinto.interface_mapping import InterfaceFunctionMapping, InterfaceMappingRegistry
 from pyinto.realizations.registry import RealizationRegistry
 
@@ -28,6 +28,6 @@ def test_stage4c_explicit_mapping_and_duplicate_rejection() -> None:
 
 
 def test_stage4c_model_external_object_identity_is_unchanged() -> None:
-    shape = PortType("demo.memory.Region", "integer", (("minimum", 1),))
-    assert shape.key == "port:demo.memory.Region.integer"
-    assert ValueKind.PORT_OBJECT.value == "port_object"
+    shape = MappedType("demo.memory.Region", "integer")
+    assert shape.key == "mapped:demo.memory.Region.integer"
+    assert ValueKind.MAPPED_OBJECT.value == "mapped_object"

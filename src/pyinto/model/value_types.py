@@ -1,8 +1,8 @@
 """Model value-kind references for Target authors.
 
 Each symbol aliases the existing ValueKind singleton. This module does not
-introduce new ValueType identities or change how port-typed values are keyed.
-ValueKind members and PortType instances can be used as @realizes subjects.
+introduce new ValueType identities or change how mapped-object values are keyed.
+ValueKind members and MappedType instances can be used as @realizes subjects.
 """
 
 from pyinto.constructs.types import (
@@ -10,7 +10,7 @@ from pyinto.constructs.types import (
     DictType,
     InstanceType,
     ListType,
-    PortType,
+    MappedType,
     TupleType,
     ValueKind,
     ValueType,
@@ -44,9 +44,9 @@ __all__ = [
     "Iterable",
     "List",
     "ListType",
+    "MappedType",
     "NoneValue",
     "Object",
-    "PortType",
     "String",
     "Tuple",
     "TupleType",

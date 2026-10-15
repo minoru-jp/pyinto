@@ -8,7 +8,7 @@ from typing import ClassVar
 
 from .base import Construct, Value
 from .control import Block, Branch, For, Try, While, With
-from .type_rules import _compatible, _value_type_compatible
+from .type_rules import _binds, _value_type_compatible
 from .types import (
     CallableType,
     ConstructError,
@@ -59,7 +59,7 @@ class FunctionSignature:
                 raise ConstructError(
                     "Only immutable scalar default literals are supported"
                 )
-            if not _compatible(param, default):
+            if not _binds(param, default):
                 raise ConstructError("Function default argument type mismatch")
             seen_default = True
         if not isinstance(self.return_type, ValueType):
@@ -114,7 +114,7 @@ class FunctionSignature:
         if not self.return_annotation:
             raise ConstructError("Function requires an explicit return annotation")
         if self.variadic_parameter is not None or any(
-            p.kind is ValueKind.PORT_OBJECT for p in self.parameters
+            p.kind is ValueKind.MAPPED_OBJECT for p in self.parameters
         ):
             # Variadic function *values* are not representable as the existing
             # fixed-arity CallableType. Direct calls remain fully supported.
@@ -141,9 +141,9 @@ class FunctionSignature:
     def callable_type(self) -> CallableType:
         if self.variadic_parameter is not None:
             raise ConstructError("Variadic function values are unsupported")
-        if any(p.kind is ValueKind.PORT_OBJECT for p in self.parameters):
+        if any(p.kind is ValueKind.MAPPED_OBJECT for p in self.parameters):
             raise ConstructError(
-                "Unshaped Port types cannot be used as function values"
+                "Unshaped mapped types cannot be used as function values"
             )
         return CallableType(
             tuple(p.value_type for p in self.parameters),
@@ -185,7 +185,7 @@ class Parameter(Construct):
             not isinstance(
                 self.default, (Literal, FloatingLiteral, BooleanLiteral, NoneLiteral)
             )
-            or not _compatible(self.symbol, self.default)
+            or not _binds(self.symbol, self.default)
         ):
             raise ConstructError("Parameter requires a type-compatible scalar default")
 
@@ -395,7 +395,7 @@ class FunctionCall(Value):
         if not all(isinstance(argument, Value) for argument in self.arguments):
             raise ConstructError("Function call arguments must be Value objects")
         for parameter, value in zip(self.signature.parameters, self.arguments[:fixed]):
-            if not _compatible(parameter, value):
+            if not _binds(parameter, value):
                 raise ConstructError("Function argument type mismatch")
         if self.signature.variadic_parameter is not None:
             shape = self.signature.variadic_parameter.value_type.tuple_type

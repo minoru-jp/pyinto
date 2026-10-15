@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from .base import Construct, Value
-from .type_rules import _compatible, assignable
+from .type_rules import _binds, _compatible, assignable
 from .types import (
     ConstructError,
     Identifier,
@@ -26,7 +26,7 @@ class Initialize(Construct):
     HOLES: ClassVar[frozenset[str]] = frozenset({"type", "name", "value"})
 
     def __post_init__(self) -> None:
-        if self.symbol.kind is None or not _compatible(self.symbol, self.value):
+        if self.symbol.kind is None or not _binds(self.symbol, self.value):
             raise ConstructError("Initialization type mismatch")
 
     def parts(self) -> Mapping[str, object]:
@@ -75,7 +75,7 @@ class UnpackAssign(Construct):
         for target, item_type in zip(self.targets, shape.element_types, strict=True):
             if (
                 not isinstance(target, Reference)
-                or target.kind is ValueKind.PORT_OBJECT
+                or target.kind is ValueKind.MAPPED_OBJECT
             ):
                 raise ConstructError("Unpack assignment requires ordinary References")
             if target.symbol.role in {

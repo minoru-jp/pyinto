@@ -20,9 +20,9 @@ level: MUST
 
 ## CST_002
 
-Every newly declared value-bearing `Symbol` must retain its annotated type. An ordinary value declaration has exactly one recursive `ValueType`; a Port object instead has `PortType`, distinguishing its source, variant, and integer constraints. Builtin-only Symbols use `type=None`. The `kind` and type-shape accessors are derived from `type`, not separately stored fields. Do not silently reinterpret Ports or builtin-only Symbols as ordinary `ValueType` instances, and do not determine Target-specific type spellings from Python annotations.
+Every newly declared value-bearing `Symbol` must retain its annotated type. An ordinary value declaration has exactly one recursive `ValueType`; a mapped object instead has `MappedType`, distinguishing its source and variant. `MappedType` holds no constructor arguments and no numeric range or size. Builtin-only Symbols use `type=None`. The `kind` and type-shape accessors are derived from `type`, not separately stored fields. Do not silently reinterpret mapped objects or builtin-only Symbols as ordinary `ValueType` instances, and do not determine Target-specific type spellings from Python annotations.
 
-title: Preserving types and Port object shapes
+title: Preserving types and mapped object shapes
 
 level: MUST
 
@@ -172,7 +172,7 @@ level: MUST
 
 ## CST_020
 
-A function's `CallableType` contains ordered positional argument `ValueType`s and one return `ValueType`, recursively embedded in `ValueType`. Reject missing function shapes and function shapes attached to nonfunction types during construction. Function type compatibility uses exact structural shape equality rather than arbitrary Python Callable subtyping. A regular `Value` exposes `kind` and function/tuple/list/dict/instance shapes from one `value_type`; only scalar values may derive a `ValueType` from the existing value kind. Do not maintain independent competing representations of composite type shapes, and do not require ordinary `ValueType` for Port references. Extend existing Initialize/Assign/FunctionCall compatibility checks for function-valued variables and arguments.
+A function's `CallableType` contains ordered positional argument `ValueType`s and one return `ValueType`, recursively embedded in `ValueType`. Reject missing function shapes and function shapes attached to nonfunction types during construction. Function type compatibility uses exact structural shape equality rather than arbitrary Python Callable subtyping. A regular `Value` exposes `kind` and function/tuple/list/dict/instance shapes from one `value_type`; only scalar values may derive a `ValueType` from the existing value kind. Do not maintain independent competing representations of composite type shapes, and do not require ordinary `ValueType` for mapped-object references. Extend existing Initialize/Assign/FunctionCall compatibility checks for function-valued variables and arguments.
 
 title: Structural types and compatibility for first-class functions
 
@@ -180,7 +180,7 @@ level: MUST
 
 ## CST_021
 
-`FunctionSignature` remains the declaration identity used for direct calls. A fully typed signature exposes a stable `value_symbol` identifying the same declaration, with `ValueKind.FUNCTION` and matching `CallableType`. The existing `Reference` can denote a declared function or function-typed variable, and a `FunctionCall` returning a function type propagates its `CallableType`. A runtime function value instantiated by each nested-function execution is not the same thing as the static declaration; environment storage and runtime identity are not fixed by the Model. Signatures with Port-shaped parameters retain direct-call behavior but cannot become function values. Return annotations require `ValueType`; do not infer undefined Port returns.
+`FunctionSignature` remains the declaration identity used for direct calls. A fully typed signature exposes a stable `value_symbol` identifying the same declaration, with `ValueKind.FUNCTION` and matching `CallableType`. The existing `Reference` can denote a declared function or function-typed variable, and a `FunctionCall` returning a function type propagates its `CallableType`. A runtime function value instantiated by each nested-function execution is not the same thing as the static declaration; environment storage and runtime identity are not fixed by the Model. Signatures with mapped-shaped parameters retain direct-call behavior but cannot become function values. Return annotations require `ValueType`; do not infer undefined mapped returns.
 
 title: Separating function declarations from function-value references
 
@@ -580,7 +580,7 @@ level: MUST
 
 ## CST_070
 
-`UnpackAssign(targets, value)` holds a fixed-length sequence of already declared, ordinarily typed Reference destinations and a typed Tuple Value of the same length. Validate per-position assignability at construction; reject mismatched length/type and attempts to rebind Ports or receiver references. At runtime evaluate the entire RHS *once*, establish all positional values, then assign destinations in left-to-right order. Duplicate destinations are legal and the final assignment wins. Do not desugar `a, b = b, a` into unrelated Assigns or dictate Target temporaries. Realization must reject if unable to preserve RHS capture and assignment order.
+`UnpackAssign(targets, value)` holds a fixed-length sequence of already declared, ordinarily typed Reference destinations and a typed Tuple Value of the same length. Validate per-position assignability at construction; reject mismatched length/type and attempts to rebind mapped objects or receiver references. At runtime evaluate the entire RHS *once*, establish all positional values, then assign destinations in left-to-right order. Duplicate destinations are legal and the final assignment wins. Do not desugar `a, b = b, a` into unrelated Assigns or dictate Target temporaries. Realization must reject if unable to preserve RHS capture and assignment order.
 
 title: Fixed-length Tuple unpack assignment
 
@@ -602,3 +602,50 @@ title: Existing versus introduced iteration bindings
 
 level: MUST
 
+## CST_076
+
+`ValueType.label` may hold a `KindLabel(name, arguments)` representing a word of `pyinto.kinds`. `name` is the word and `arguments` is a sequence of positive integers or `ValueType` values, recorded exactly as written in the source. The Host neither defines nor checks what a label means (size, range, representation, or run-time behavior). Labels do not take part in `ValueType` equality or hashing; type compatibility is decided only by the Python-side kind and structure. The single additional rule is that a `None`-typed value labeled `Void` / `Nil` / `Null` may be assigned or bound to a declared type that carries a label. `annotation()` returns the label's spelling when present (e.g. `Pointer[Int[32]]`).
+
+title: Carrying uninterpreted kind labels
+
+level: MUST
+
+## CST_077
+
+Kind words for values, comparisons, and pointer operations are recorded in the Model by these Constructs. `NoneAlias(name)` is a `Void` / `Nil` / `Null` value whose variant is `void` / `nil` / `null` respectively. `NoneAliasComparison(left, operator, right)` is a `==` / `!=` comparison in which one side is a None alias and the other is a labeled value. `AddressOf(target)` makes a value labeled `Pointer[type of the variable]` from a `Reference` to a typed variable; `PointerLoad(pointer)` makes a `T` value from a value labeled `Pointer[T]`; and `PointerStore(pointer, value)` is a statement writing a value assignable to `T` through a `Pointer[T]`. These carry no execution meaning and no Admission semantic obligations; the Target decides how to realize them.
+
+title: Constructs for kind values, comparisons, and pointer operations
+
+level: MUST
+
+## CST_078
+
+`ClassDefinition.labels` holds the `@Interface` / `@MixIn` / `@Implements(...)` attached to a class as `KindLabel` values in source order. The arguments of `Implements` are `ValueType` values carrying the `InstanceType` of each implemented class. Duplicate words are rejected. Labels do not change inheritance, the method set, or whether the class can be instantiated; they are information passed to Targets only.
+
+title: Recording kind words attached to classes
+
+level: MUST
+
+## CST_079
+
+The dynamic-memory vocabulary expresses shape and ownership as type labels. `Buffer[T]` is a sequence of `T` whose length is decided at run time and has the Python-side shape `list[T]`. `Owned[X]` and `Shared[X]` keep the Python-side shape of `X` and add an ownership label; `X` may be either a single type or `Buffer[T]`. An unlabeled `Buffer[T]` denotes a non-owning sequence. The Host defines no meaning for these (how storage is obtained, lifetimes, or the sharing mechanism).
+
+title: Shape and ownership labels for dynamic memory
+
+level: MUST
+
+## CST_080
+
+Dynamic-memory operations are recorded as these Constructs. `MemoryNew(element_type, value)` makes an `Owned[T]` value and `MemoryNewBuffer(element_type, length, value)` an `Owned[Buffer[T]]` value. `MemoryRelease(handle)` is a statement marking the end of an `Owned` / `Shared` value's lifetime; `MemoryResize(target, length)` is a statement changing the length of an owned `Buffer` variable; `MemoryLength(handle)` is the length of a `Buffer`; `MemoryBorrow(handle)` is a non-owning view that is a `Pointer[T]` for a single value and an unlabeled `Buffer[T]` for a sequence; and `MemoryCopy(destination, source)` and `MemoryFill(handle, value)` are statements copying between `Buffer` values and setting every element. `MemoryRelease` and `MemoryBorrow` have a `single` / `buffer` variant derived from the handle's type. None of these carries execution meaning or Admission semantic obligations; the Target decides how to realize them from the type labels.
+
+title: Constructs for dynamic-memory operations
+
+level: MUST
+
+## CST_081
+
+`Wide[X]` / `Narrow[X]` in `pyinto.kinds.datatypes.general` express size relative to `int` / `float`, with nesting depth giving the number of steps. `Unsigned[X]` expresses an integer without sign and is always written outermost. `Size` / `Index` / `Byte` express integer roles. All of them keep the Python-side shape of the base type, and the Host defines no actual size or representation. So that each meaning has one spelling, mixing `Wide` and `Narrow`, writing `Unsigned` inside, applying `Unsigned` to non-integers, and applying `Wide` / `Narrow` to anything other than a base type are rejected.
+
+title: General datatypes: relative size, sign, and roles
+
+level: MUST

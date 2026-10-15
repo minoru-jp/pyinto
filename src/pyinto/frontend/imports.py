@@ -13,6 +13,9 @@ from pyinto.interface_mapping import InterfaceMappingRegistry
 from .context import NameState
 from .decorators import DecoratorRegistry
 from .errors import reject
+from .kinds import MODULES as KIND_MODULES
+from .kinds import PACKAGE as KIND_PACKAGE
+from .kinds import module_of
 
 
 class ImportNormalizer:
@@ -33,6 +36,7 @@ class ImportNormalizer:
             or local in self._names.callable_aliases
             or local in self._names.interface_aliases
             or local in self._names.module_aliases
+            or local in self._names.kind_aliases
             or local in self._decorators.imported_names
         ):
             raise reject(node, f"Duplicate or reserved import alias: {local!r}")
@@ -40,6 +44,12 @@ class ImportNormalizer:
     def accept(self, node: ast.Import | ast.ImportFrom) -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
+                if _is_kinds(alias.name):
+                    raise reject(
+                        node,
+                        "Import kinds with 'from pyinto.kinds.<surface>.<tier> "
+                        "import ...'",
+                    )
                 if not self._interface_mappings.has_namespace(alias.name):
                     raise reject(
                         node, f"Unregistered interface mapping module: {alias.name!r}"
@@ -61,6 +71,27 @@ class ImportNormalizer:
             raise reject(
                 node, "Only explicit absolute interface mapping imports are supported"
             )
+        if _is_kinds(node.module):
+            words = KIND_MODULES.get(node.module)
+            if words is None:
+                raise reject(
+                    node,
+                    "Import kinds from one of: " + ", ".join(sorted(KIND_MODULES)),
+                )
+            for alias in node.names:
+                if alias.name not in words:
+                    home = module_of(alias.name)
+                    raise reject(
+                        node,
+                        f"{alias.name!r} is not in {node.module}"
+                        + (f"; import it from {home}" if home else ""),
+                    )
+                local = alias.asname or alias.name
+                self._reserve(local, node)
+                if local in {"int", "float", "str", "bool", "object", "None"}:
+                    raise reject(node, f"Reserved name for a kind: {local!r}")
+                self._names.kind_aliases[local] = alias.name
+            return
         if node.module == "typing":
             for alias in node.names:
                 if alias.name not in {"Any", "Callable"}:
@@ -97,3 +128,7 @@ class ImportNormalizer:
                 self._names.module_import_paths[local] = {source}
             else:
                 raise reject(node, f"Unregistered interface mapping import: {source!r}")
+
+
+def _is_kinds(module: str) -> bool:
+    return module == KIND_PACKAGE or module.startswith(KIND_PACKAGE + ".")

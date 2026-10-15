@@ -10,17 +10,7 @@ from pyinto import convert
 from pyinto.interfaces import language as lang
 from pyinto.realizations.registry import RealizationRegistry
 from pyinto.realizations.regulation import (
-    pack_dispatch,
-    pack_entries,
-    pack_runtime,
-    pack_runtime_schema,
-    pack_semantics,
-    pack_session,
-    pack_target,
-    pack_unhandled,
     realizes,
-    variant,
-    visit,
 )
 
 # The static Model preserves the loop and branch. A native Python execution
@@ -46,14 +36,14 @@ def record_control(node, context) -> None:
 
 @realizes(lang.For)
 class ForOutline:
-    variant @= "*"
-    visit @= record_control
+    variant = "*"
+    visit = record_control
 
 
 @realizes(lang.Branch)
 class BranchOutline:
-    variant @= "*"
-    visit @= record_control
+    variant = "*"
+    visit = record_control
 
 
 class OutlineSession:
@@ -82,24 +72,24 @@ class TraceSession(OutlineSession):
 
 
 class OutlinePack:
-    pack_target @= "outline"
-    pack_dispatch @= "structural"
-    pack_semantics @= "projection"
-    pack_unhandled @= "traverse"
-    pack_runtime @= "ignored"
-    pack_entries @= (ForOutline, BranchOutline)
-    pack_session @= OutlineSession
+    target = "outline"
+    dispatch = "structural"
+    semantics = "projection"
+    unhandled = "traverse"
+    runtime = "ignored"
+    entries = (ForOutline, BranchOutline)
+    session = OutlineSession
 
 
 class TracePack:
-    pack_target @= "trace"
-    pack_dispatch @= "structural"
-    pack_semantics @= "projection"
-    pack_unhandled @= "traverse"
-    pack_runtime @= "required"
-    pack_runtime_schema @= trace_schema
-    pack_entries @= (ForOutline, BranchOutline)
-    pack_session @= TraceSession
+    target = "trace"
+    dispatch = "structural"
+    semantics = "projection"
+    unhandled = "traverse"
+    runtime = "required"
+    runtime_schema = trace_schema
+    entries = (ForOutline, BranchOutline)
+    session = TraceSession
 
 
 if __name__ == "__main__":

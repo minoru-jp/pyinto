@@ -24,7 +24,7 @@ from pyinto.constructs import (
 from pyinto.constructs.admission import LANGUAGE_ADMISSION
 from pyinto.realizations import Composer, RealizationRegistry
 from pyinto.realizations.layout import Text
-from pyinto.realizations.regulation import realizes, render, variant
+from pyinto.realizations.regulation import realizes
 from tests.support.c_realizer import C_DECLARATIONS, c_bindings
 
 
@@ -58,7 +58,7 @@ def test_binding_can_read_root_ancestors_parent_and_sibling_contracts() -> None:
         assert ctx.path == (*ctx.ancestors, node)
         assert ctx.parent is branch.then_body
         assert isinstance(ctx.root, Program)
-        # A Binding may inspect siblings and their type/Port declarations.
+        # A Binding may inspect siblings and their type/mapped declarations.
         assert ctx.root.body.children[0] is declaration
         assert declaration.symbol.annotation == "int"
         assert isinstance(branch.condition, Comparison)
@@ -69,7 +69,7 @@ def test_binding_can_read_root_ancestors_parent_and_sibling_contracts() -> None:
 
     @realizes(Break)
     class InspectBreak:
-        render @= select_break
+        render = select_break
 
     entries = tuple(entry for entry in C_DECLARATIONS if entry.__name__ != "CBreak")
     bindings = RealizationRegistry("c", (*entries, InspectBreak))
@@ -128,11 +128,11 @@ def test_slots_compose_once_in_template_order_with_fresh_emission_state() -> Non
 
     @realizes(_Pair)
     class PairBinding:
-        render @= lambda node, ctx: "${right}|${left}|${right}"
+        render = lambda node, ctx: "${right}|${left}|${right}"
 
     @realizes(_Leaf)
     class LeafBinding:
-        render @= select_leaf
+        render = select_leaf
 
     composer = Composer(
         RealizationRegistry("c", (PairBinding, LeafBinding)),
@@ -162,8 +162,8 @@ def test_context_path_restored_when_binding_rejects_a_node() -> None:
 
     @realizes(Literal)
     class RejectLiteral:
-        variant @= "integer"
-        render @= reject
+        variant = "integer"
+        render = reject
 
     entries = tuple(
         entry for entry in C_DECLARATIONS if entry.__name__ != "CIntegerLiteral"

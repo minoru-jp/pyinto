@@ -36,12 +36,12 @@ def test_published_document_coverage_is_explicit() -> None:
         "specification/frontend.md",
         "specification/composition.md",
         "specification/conversion.md",
-        "target_implementation/INDEX.md",
-        "target_implementation/implementation-guide.md",
-        "target_implementation/declaration-reference.md",
-        "target_implementation/construct-reference.md",
-        "target_implementation/admission-reference.md",
-        "target_implementation/verification-guide.md",
+        "realizer/INDEX.md",
+        "realizer/implementation-guide.md",
+        "realizer/declaration-reference.md",
+        "realizer/construct-reference.md",
+        "realizer/admission-reference.md",
+        "realizer/verification-guide.md",
     }
     assert data["entries"]["README.md"]["coverage"] == "translated"
     assert data["entries"]["STATUS.md"]["coverage"] == "translated"

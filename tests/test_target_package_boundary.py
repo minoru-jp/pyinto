@@ -34,7 +34,7 @@ def test_reference_targets_live_outside_the_host_distribution() -> None:
     assert not HOST.joinpath("targets").exists()
 
 
-def test_host_cannot_import_development_target_implementations() -> None:
+def test_host_cannot_import_development_realizers() -> None:
     """Host modules never import a fixture or an older C shortcut."""
     prohibited = (
         "pyinto_target_c",
@@ -55,6 +55,9 @@ def test_reference_targets_use_public_pyinto_modules_only() -> None:
         "pyinto.constructs",
         "pyinto.interfaces",
         "pyinto.model",
+        "pyinto.model.kinds",
+        "pyinto.model.kinds.datatypes",
+        "pyinto.model.kinds.memory",
         "pyinto.realizations.layout",
         "pyinto.realizations.registry",
         "pyinto.realizations.regulation",

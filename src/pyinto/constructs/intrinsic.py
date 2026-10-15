@@ -61,11 +61,11 @@ def _valid_shape(shape: object, *, argument: bool) -> bool:
     if not isinstance(shape, (ValueType, IntrinsicTypeVar, IntrinsicListType)):
         return False
     if isinstance(shape, ValueType) and argument:
-        return shape.kind not in {ValueKind.NONE, ValueKind.PORT_OBJECT}
+        return shape.kind not in {ValueKind.NONE, ValueKind.MAPPED_OBJECT}
     if isinstance(shape, IntrinsicListType) and isinstance(
         shape.element_type, ValueType
     ):
-        return shape.element_type.kind not in {ValueKind.NONE, ValueKind.PORT_OBJECT}
+        return shape.element_type.kind not in {ValueKind.NONE, ValueKind.MAPPED_OBJECT}
     return True
 
 

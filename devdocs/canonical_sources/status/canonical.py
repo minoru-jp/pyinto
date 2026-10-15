@@ -23,34 +23,54 @@ class STATUS:
         - **Host（`pyinto`）**：Foundation・Language Interface・Python Source Adapter・
           Surfaceの役割を同一パッケージで提供する。`convert()` / `realize()`は
           Realization登録を明示して利用し、特定Targetを暗黙選択しない。
-        - **成果物提出**：Target Packは`pack_dispatch`で`composition`または
-          `structural`を宣言でき、生成処理単位で`pack_session`の新しい状態を作る。
-          HostはRealizer呼出を管理し、最終成果物はSessionの`finish()`から受け取り
+        - **成果物提出**：Target Packは`dispatch`で`composition`または
+          `structural`を宣言でき、生成処理単位で`session`の新しい状態を作る。
+          HostはRealization呼出を管理し、最終成果物はSessionの`finish()`から受け取り
           形式を変換せず返す。`composition`はTemplate/Slotの連鎖を維持し、
           TextArtifactSessionが既存の文字列生成を担う。`structural`は全Constructを
           `parts()`順の深さ優先先行順で訪問し、`visit`実装がTarget状態を操作する。
-          非テキスト（dictやbytes）を返せる。`pack_semantics`で意味保存（既定）
+          非テキスト（dictやbytes）を返せる。`semantics`で意味保存（既定）
           と意味射影を区別し、射影では実行意味の`supports`照合を要求しない。
-          `pack_unhandled`は既定の`error`か`traverse`を宣言でき、後者はStructuralで
-          意味射影を選んだTargetだけが使用できる。未登録RealizerのConstructを
+          `unhandled`は既定の`error`か`traverse`を宣言でき、後者はStructuralで
+          意味射影を選んだTargetだけが使用できる。未登録RealizationのConstructを
           訪問せずに子へ進めるが、Admission未登録のModelは必ず拒否する。
           RealizationのvariantはConstructの `variant_domain()` で既知の有限候補を
           登録時に検証し、存在しないvariantを拒否する。省略は従来のdefault指定で、
           Structural射影Targetにおける複数variant/開いた定義域では省略できない。
-          `variant @= "*"` は任意variantの明示選択となり、個別指定が優先する。
+          `variant = "*"` は任意variantの明示選択となり、個別指定が優先する。
           Dynamic IntrinsicCallのように候補が開いているものは完全列挙しない。
           個別射影の正しさを検査する包括的な契約体系、成果物への意味モード情報の
           自動埋め込みは未実装。
         - **Runtime情報経路**：トップレベルの `__pyinto_runtime__()` をConstruct Modelから
-          切り分け、Target Packの `pack_runtime`（`required` / `forbidden` /
+          切り分け、Target Packの `runtime`（`required` / `forbidden` /
           `optional` / `ignored`、既定は `ignored`）で利用を宣言できる。
           信頼済みソースだけをHostが通常のPythonで実行し、戻り値を必要に応じて
           Session `finish(R)` に渡す。`optional` の関数不在時は公開センチネル
           `RUNTIME_ABSENT` を渡し、`None` と区別する。Model単独の `realize()` は
-          `required` に対応しない。Hostは実行結果の意味を解釈しない。追加の `pack_runtime_schema`
+          `required` に対応しない。Hostは実行結果の意味を解釈しない。追加の `runtime_schema`
           はTargetが型オブジェクトか値検証関数で宣言でき、Hostが`finish(R)`の
           直前に検証する。型の簡易表現は`isinstance`のみで扱い、値・複合型の
           条件は検証関数に任せる。`optional`の不在時は検証を省略する。
+        - **宣言形式**：Target Pack・実現エントリ・Interface Mappingの宣言は、
+          役割マーカー（`@realizes` / `@naming` / `@maps` / `@signature`）と
+          通常のクラス属性 `=` で書く。そのクラス自身の`vars(cls)`だけを読み、
+          未知の公開名・型の誤り・宣言クラスからの継承を登録時に拒否する。
+          Host Wheelは実行時に第三者パッケージへ依存しない。
+        - **Kind**：`pyinto.kinds` が、Targetへ型・メモリ・宣言の情報を渡す語彙を
+          公開面 `datatypes` / `memory` / `declarations` と段 `general` / `detailed`
+          に分けて提供する。`general` はPythonの組み込み型と `Wide` / `Narrow` /
+          `Unsigned` / `Size` / `Index` / `Byte`、`Owned` / `Shared` / `Buffer` /
+          `Memory` の操作で、全Targetが解釈を定める汎用語彙とする。`detailed` は
+          `Int[N]`、`Pointer[T]`、`Null`、`@Interface` 等の言語に近い選択肢。
+          Hostは意味を定義せず、Python側の形状と `KindLabel` としてModelに記録して
+          Targetへ渡す。ラベルは型の互換判定に参加せず、Kindが関わる演算には
+          Pythonの意味義務を要求しない。Targetは `pyinto.model.kinds` の要素で型表記を
+          登録し、`profile()` と `missing_general()` で汎用語彙の解釈と対応状況を
+          確かめられる。C参照Realizerは一部の語だけを実現する。
+        - **マップ済みオブジェクトの形状**：クラスマッピングで登録したクラスの
+          オブジェクトは `クラス.variant()` の引数なしの呼出で生成し、`MappedType` は
+          source と variant だけを持つ。クラスマッピングはテスト用のカウンタで検証し、
+          関数マッピングは `examples/mapping_demo` で示す。
         - **開発用C Realizer**：`tests/support/c_realizer/`に移管した
           非公開の参照実装。`from tests.support.c_realizer import c_bindings`は
           開発・テスト環境専用であり、別配布Wheelや自動選択は提供しない。
@@ -62,17 +82,43 @@ class STATUS:
           外部Python APIをConstructへ正規化する。`pyinto.interfaces` は
           Language/Builtinsの既存Constructを同一性維持で再公開する薄い窓口。
           外部Interfaceの自動探索・登録、CLI、Target自動発見、Bundle組成は未実装。
-        - **Model型情報**：`PortType`、`ValueKind.PORT_OBJECT`、`port:`は現行識別名。
-          型同一性の検討なしにInterfaceへ機械的に置換しない。
+        - **Model型情報**：マップ済みオブジェクトの型は `MappedType`、
+          `ValueKind.MAPPED_OBJECT`、型表記の鍵 `mapped:` で表す。Kindの
+          `@Interface` とは別のものである。
         - **管理単位**：配布対象はHost Wheelのみ。C/Python参照Realizerは
           共に`tests/support/`で管理し、ホストの公開API境界と意味保存を検証する。
           意味保存の検証は登録契約の照合に加えて実行テストを要する。
         """
 
-        title @= "現在の公開・開発構成（第50回）"
+        title @= "現在の公開・開発構成（0.2.0）"
 
     class Implemented:
         r"""
+        - 0.2.0・Kindの語彙：`pyinto.kinds` を追加し、型・メモリ・宣言の語を
+          公開面と `general` / `detailed` の段に分けて、意味を持たないラベルとして
+          Modelに記録する（CST_076〜081、FRT_075〜078、FRT_080）。Targetは
+          `pyinto.model.kinds` の要素で型表記を登録し、`profile()` /
+          `missing_general()` / 型表記の `requires` を使える。Kindが関わる演算には
+          Pythonの意味義務を要求しない（CMP_033〜036）。あわせてマップ済み
+          オブジェクトのコンストラクタ引数（整数制約）とメモリのクラスマッピングの
+          デモを廃止した（FRT_079）。
+        - 0.2.0・用語整理：変換の流れを Source → Host → Model → Realizer → Artifact
+          の一組の語で呼ぶことにした。Target Implementation を Realizer に改め、
+          Realizer の中の個々の規則を Realization、入口の宣言を Target Pack と
+          呼び分ける。Model は1つの Source から作る Construct の木を指す。
+          Target実装向けの文書は `realizer/`（英語版は `docs/realizer/`）に移した。
+          またInterface Mappingでは、Model内部に残っていたPortの名前を
+          `MappedType`、`ValueKind.MAPPED_OBJECT`、`Symbol.mapped_type`、型表記の鍵
+          `mapped:` に改め、文書では関数マッピング・クラスマッピング・マップ済み
+          オブジェクトと呼ぶ（CST_002、FRT_079）。開発用の契約の境界名を
+          `FrontendBoundary` / `CompositionBoundary` に改め、デモを
+          `examples/mapping_demo` に移した。
+        - 0.2.0・通常のクラス属性による宣言：Target Pack・実現エントリ・
+          Interface Mappingの `@=` 記述を通常の `=` に置き換え、Packの宣言名から
+          `pack_` 接頭辞を外した。`requires` はstrのtupleで指定する。宣言の読み取りと
+          検証（未知名・型・継承・マーカー重複の拒否、CMP_032）をHost内に実装し、
+          実行時依存 `shikumi` を削除した。役割マーカー、各宣言の意味、
+          Admission・Dispatch・Runtimeの契約は変更していない。
         - 第46回・自作関数の型付き可変長引数：トップレベル `def f(*items: T)`
           と固定引数を伴う同形式を `FunctionSignature.variadic_parameter` と
           実行時同種可変長 `TupleType` の型情報で保持。0個以上の静的な位置引数を
@@ -358,12 +404,12 @@ class STATUS:
           Construct を拒否せず C 変換時に明確なエラーを返す。
         - ヘッダなどの要求は子の構成時に収集し、完成後の最終レンダリングで配置。
         - C Target Pack と Python Target Pack の差し替え。
-        - 外部関数 Port (`DeviceIsReady`) とインスタンス Port
-          (`ManualMemoryRegion`) の明示登録・Target Binding。
-        - インスタンス Port の `release()` を独立した明示的操作として扱い、
+        - 外部関数の関数マッピング (`DeviceIsReady`) と、テスト用カウンタの
+          クラスマッピングの明示登録・Target Binding。
+        - クラスマッピングの後始末（`close()`）を独立した明示的操作として扱い、
           自動 Cleanup しない。
-        - `a: ManualMemoryRegion = ...; b: ManualMemoryRegion = a` の
-          単純な別名宣言と、宣言済み制約の Target 型解決を実装。
+        - `a: Counter = Counter.open(); b: Counter = a` の
+          単純な別名宣言と、マップ済み型の Target 型解決を実装。
           対応 Binding がない型表現は拒否する。
         - 第30段階後の内部整理として、`constructs.py` を型・基底・型規則・値・
           コレクション・制御・演算・関数・クラスの各モジュールへ分離した。
@@ -735,7 +781,7 @@ class STATUS:
           （ClassDecorationPlan / MethodKind / 同署名 FunctionDefinition）以外の
           任意の Construct / Interface への置換や、複数デコレーターの合成は
           今後の個別設計を要する。登録した名前だけでは使用可能にならない。
-        - ループ内部での新規変数定義や Port の再束縛。
+        - ループ内部での新規変数定義やマップ済みオブジェクトの再束縛。
         - C Target での一般的な `for` イテラブル、`with` の入退出・例外抑制、
           C での Python 例外クラス（`range` のステップ 0 等）の再現。
         - `for` / `with` に関する AST の全構文（分配代入など）。
@@ -761,7 +807,7 @@ class STATUS:
           例外メッセージの多引数・非文字列形式、例外処理 Construct の
           Target Realization。対応する Realization がなければ明示的に拒否する。
         - すべての Python AST や Python 実行時意味論の等価な変換。
-        - 複数の可能な Port 参照や分岐を跨ぐ Port 再束縛、
+        - 複数の可能なマップ済みオブジェクト参照や分岐を跨ぐ再束縛、
           関数の高度な引数形式・未採用の一般デコレータ・関数値の Target Realization・
           クロージャーの逸出後の捕捉変数の寿命の実現・
           限定範囲外の `global`・一般的な Python スコープ（nonlocal 等）、
@@ -776,7 +822,7 @@ class STATUS:
         - `typing.Any` / `object` に対する C Target の汎用的な表現。
         - ターゲット固有の式準備処理を任意の実行位置へ再配置する仕組み。
         - メモリ確保失敗、解放漏れ、二重解放、解放後使用の静的保証。
-        - Python Port と他言語ライブラリの全体的な意味的等価性保証。
+        - マップ元のPythonライブラリと他言語ライブラリの全体的な意味的等価性保証。
         - Target Pack の外部配布、自動探索、Target Binding API の安定化。
         - 公開向け英語文書。
 

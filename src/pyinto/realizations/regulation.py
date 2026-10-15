@@ -1,89 +1,80 @@
-"""Shikumi contracts for composition and structural Target Pack entries."""
+"""Plain class-attribute declarations for Target Pack entries and Packs.
+
+A realization entry is a class decorated with ``@realizes(element)`` (or the
+naming policy marker ``@naming``) whose body assigns declaration values with
+ordinary ``=``::
+
+    @realizes(lang.While)
+    class CWhile:
+        template = "while (${condition}) {\n    ${body}\n}"
+
+A Target Pack is an undecorated class passed explicitly to
+``RealizationRegistry.from_pack()``::
+
+    class CTargetPack:
+        target = "c"
+        entries = (CWhile,)
+
+Only names declared directly in the class body are read. Unknown public names,
+values of the wrong type, and inherited declarations are rejected when the
+class is registered. Use a leading underscore for helper attributes.
+"""
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+import re
+from collections.abc import Callable, Iterator
+from typing import TypeVar, cast
 
-from shikumi import (
-    Cardinality,
-    Diagnostic,
-    InformationType,
-    SemanticView,
-    Shikumi,
-    StructuralKind,
-    validator,
-)
-from shikumi.standard import assignment, decorator, information_type_rule
-
+from pyinto._declaration import Declaration, Field, marker, require
 from pyinto.constructs import Construct, Program
-from pyinto.constructs.types import PortType, ValueKind
+from pyinto.constructs.types import MappedType, ValueKind
 from pyinto.interfaces.builtins import PrintCall
+from pyinto.model.kinds import ELEMENTS, KindElement
 from pyinto.realizations.layout import holes_in
 from pyinto.realizations.runtime import is_runtime_schema
 
-# Realization target is a publicly exported Model element, not a string key.
-REALIZES = InformationType("target.realizes", object)
-NAMING = InformationType("target.naming", bool)
-VARIANT = InformationType("target.variant", str)
-TEMPLATE = InformationType("target.template", str)
-RENDER = InformationType("target.render", object)
-VISIT = InformationType("target.visit", object)
-TYPE_NAME = InformationType("target.type_name", object)
-ACCEPTS = InformationType("target.accepts", tuple)
-SUPPORTS = InformationType("target.supports", tuple)
-REQUIRES = InformationType("target.requires", str, Cardinality.MANY)
-SEPARATORS = InformationType("target.separators", dict)
-RESERVED = InformationType("target.reserved", frozenset)
-FORBIDDEN_PREFIXES = InformationType("target.forbidden_prefixes", tuple)
-REQUIREMENT_LINE = InformationType("target.requirement_line", str)
-PACK_TARGET = InformationType("pack.target", str)
-PACK_ENTRIES = InformationType("pack.entries", tuple)
-PACK_DISPATCH = InformationType("pack.dispatch", str)
-PACK_SESSION = InformationType("pack.session", object)
-PACK_SEMANTICS = InformationType("pack.semantics", str)
-PACK_UNHANDLED = InformationType("pack.unhandled", str)
-PACK_RUNTIME = InformationType("pack.runtime", str)
-PACK_RUNTIME_SCHEMA = InformationType("pack.runtime_schema", object)
+C = TypeVar("C", bound=type)
 
-realizes = decorator(REALIZES)
-naming = decorator(NAMING)(True)
-variant = assignment(VARIANT)
-template = assignment(TEMPLATE)
-render = assignment(RENDER)
-visit = assignment(VISIT)
-type_name = assignment(TYPE_NAME)
-accepts = assignment(ACCEPTS)
-supports = assignment(SUPPORTS)
-requires = assignment(REQUIRES)
-separators = assignment(SEPARATORS)
-reserved = assignment(RESERVED)
-forbidden_prefixes = assignment(FORBIDDEN_PREFIXES)
-requirement_line = assignment(REQUIREMENT_LINE)
-pack_target = assignment(PACK_TARGET)
-pack_entries = assignment(PACK_ENTRIES)
-pack_dispatch = assignment(PACK_DISPATCH)
-pack_session = assignment(PACK_SESSION)
-pack_semantics = assignment(PACK_SEMANTICS)
-pack_unhandled = assignment(PACK_UNHANDLED)
-pack_runtime = assignment(PACK_RUNTIME)
-pack_runtime_schema = assignment(PACK_RUNTIME_SCHEMA)
+ENTRY_FIELDS: dict[str, Field] = {
+    "variant": Field(str),
+    "template": Field(str),
+    "render": Field(),
+    "visit": Field(),
+    "type_name": Field(),
+    "accepts": Field(tuple),
+    "supports": Field(tuple),
+    "requires": Field(item_type=str),
+    "separators": Field(dict),
+    "reserved": Field(frozenset),
+    "forbidden_prefixes": Field(tuple),
+    "requirement_line": Field(str),
+}
+"""Names an entry class body may assign, with their accepted value types."""
 
-ROLE_TYPES = (REALIZES, NAMING)
-ENTRY_TYPES = (
-    *ROLE_TYPES,
-    VARIANT,
-    TEMPLATE,
-    RENDER,
-    VISIT,
-    TYPE_NAME,
-    ACCEPTS,
-    SUPPORTS,
-    REQUIRES,
-    SEPARATORS,
-    RESERVED,
-    FORBIDDEN_PREFIXES,
-    REQUIREMENT_LINE,
-)
+PACK_FIELDS: dict[str, Field] = {
+    "target": Field(str),
+    "entries": Field(tuple),
+    "dispatch": Field(str),
+    "session": Field(),
+    "semantics": Field(str),
+    "unhandled": Field(str),
+    "runtime": Field(str),
+    "runtime_schema": Field(),
+}
+"""Names a Target Pack class body may assign, with their accepted value types."""
+
+ROLE_MARKERS = ("realizes", "naming")
+
+
+def realizes(element: object) -> Callable[[C], C]:
+    """Declare the class as the realization of one public Model element."""
+    return marker("realizes", element)
+
+
+def naming(subject: C) -> C:
+    """Declare the class as the Target's naming policy."""
+    return marker("naming", True)(subject)
 
 
 def realization_target(element: object) -> tuple[str, type[Construct] | str] | None:
@@ -97,86 +88,71 @@ def realization_target(element: object) -> tuple[str, type[Construct] | str] | N
         return ("construct", element)
     if element is PrintCall:
         return ("call", "print")
-    if isinstance(element, ValueKind) and element is not ValueKind.PORT_OBJECT:
+    if isinstance(element, ValueKind) and element is not ValueKind.MAPPED_OBJECT:
         return ("type", element.value)
-    if isinstance(element, PortType):
+    if isinstance(element, MappedType):
+        return ("type", element.key)
+    if isinstance(element, KindElement) and element in ELEMENTS:
         return ("type", element.key)
     return None
 
 
-@validator(focus=StructuralKind.ENTITY, name="target.entry_validity")
-def _entry_validity(view: SemanticView) -> Iterator[Diagnostic]:
-    item = view.focused
-    roles = int(item.has(REALIZES)) + int(item.has(NAMING))
+def _entry_validity(item: Declaration) -> Iterator[str]:
+    roles = int(item.has_marker("realizes")) + int(item.has_marker("naming"))
     if roles != 1:
-        yield Diagnostic("Entry must declare exactly one role", code="target.role")
+        yield "Entry must declare exactly one role"
         return
     target = (
-        realization_target(item.values(REALIZES)[0]) if item.has(REALIZES) else None
+        realization_target(item.marker("realizes"))
+        if item.has_marker("realizes")
+        else None
     )
-    if item.has(REALIZES) and target is None:
-        yield Diagnostic(
-            "realizes requires a published Construct, builtin Call, or Model type element",
-            code="target.realizes",
-        )
+    if item.has_marker("realizes") and target is None:
+        yield "realizes requires a published Construct, builtin Call, or Model type element"
         return
     is_construct = target is not None and target[0] == "construct"
     is_call = target is not None and target[0] == "call"
     is_type = target is not None and target[0] == "type"
-    if item.has(VARIANT):
+    if item.has("variant"):
         if not is_construct:
-            yield Diagnostic(
-                "variant belongs to a Construct realization", code="target.variant"
-            )
+            yield "variant belongs to a Construct realization"
         else:
             assert target is not None
             kind = target[1]
             assert isinstance(kind, type) and issubclass(kind, Construct)
-            declared = item.values(VARIANT)[0]
+            declared = item.value("variant")
             domain = kind.variant_domain()
             if declared != "*" and domain is not None and declared not in domain:
-                yield Diagnostic(
+                yield (
                     f"{kind.__name__}: invalid variant {declared!r}; "
-                    f"expected one of {', '.join(sorted(domain))} or '*'",
-                    code="target.variant",
+                    f"expected one of {', '.join(sorted(domain))} or '*'"
                 )
-    chosen = item.values(TEMPLATE)
-    callback = item.values(RENDER)
-    visitor = item.values(VISIT)
-    if item.has(SEPARATORS):
-        settings = item.values(SEPARATORS)[0]
+    chosen = cast(tuple[str, ...], item.values_of("template"))
+    callback = item.values_of("render")
+    visitor = item.values_of("visit")
+    if item.has("separators"):
+        settings = item.value("separators")
         if not isinstance(settings, dict) or any(
             not isinstance(name, str) or not isinstance(separator, str)
             for name, separator in settings.items()
         ):
-            yield Diagnostic(
-                "separators needs a mapping of Slot names to strings",
-                code="target.separators",
-            )
+            yield "separators needs a mapping of Slot names to strings"
         elif not is_construct or (chosen and set(settings) - holes_in(chosen[0])):
-            yield Diagnostic(
-                "separators needs used Construct Slots",
-                code="target.separators",
-            )
+            yield "separators needs used Construct Slots"
         elif is_construct:
             assert target is not None
             kind = target[1]
             assert isinstance(kind, type) and issubclass(kind, Construct)
             if any(not kind.accepts_part_name(name) for name in settings):
-                yield Diagnostic(
-                    "separators names must be Model part Slots",
-                    code="target.separators",
-                )
+                yield "separators names must be Model part Slots"
     if callback and not callable(callback[0]):
-        yield Diagnostic("Renderer must be callable", code="target.render")
+        yield "Renderer must be callable"
     if visitor and not callable(visitor[0]):
-        yield Diagnostic("Visitor must be callable", code="target.visit")
+        yield "Visitor must be callable"
     if visitor and not (is_construct or is_call):
-        yield Diagnostic("visit belongs to a realization entry", code="target.visit")
-    if item.has(SUPPORTS):
-        import re
-
-        obligations = item.values(SUPPORTS)[0]
+        yield "visit belongs to a realization entry"
+    if item.has("supports"):
+        obligations = item.value("supports")
         if (
             not isinstance(obligations, tuple)
             or not all(
@@ -186,21 +162,12 @@ def _entry_validity(view: SemanticView) -> Iterator[Diagnostic]:
             )
             or len(obligations) != len(set(obligations))
         ):
-            yield Diagnostic(
-                "supports must be unique namespaced contract identifiers",
-                code="target.supports",
-            )
+            yield "supports must be unique namespaced contract identifiers"
         if not (is_construct or is_call):
-            yield Diagnostic(
-                "supports belongs to a realization entry",
-                code="target.supports",
-            )
+            yield "supports belongs to a realization entry"
     if is_construct or is_call:
         if len(chosen) + len(callback) + len(visitor) != 1:
-            yield Diagnostic(
-                "Realization needs exactly one template or renderer (or visitor)",
-                code="target.layout",
-            )
+            yield "Realization needs exactly one template or renderer (or visitor)"
         if chosen:
             holes = holes_in(chosen[0])
             if is_construct:
@@ -214,137 +181,96 @@ def _entry_validity(view: SemanticView) -> Iterator[Diagnostic]:
                         kind is Program and hole == "requirements"
                     ):
                         continue
-                    yield Diagnostic(
-                        f"{kind.__name__}: unknown template hole ${{{hole}}}",
-                        code="target.hole",
-                    )
+                    yield f"{kind.__name__}: unknown template hole ${{{hole}}}"
             else:
-                if item.has(ACCEPTS):
-                    maximum = len(item.values(ACCEPTS)[0])
+                if item.has("accepts"):
+                    maximum = len(cast(tuple[object, ...], item.value("accepts")))
                     permitted = {f"arg{i}" for i in range(maximum)}
                     invalid = holes - permitted
                 else:
-                    import re
-
                     invalid = {h for h in holes if not re.fullmatch(r"arg[0-9]+", h)}
                 for hole in invalid:
-                    yield Diagnostic(
-                        f"Invalid call hole ${{{hole}}}", code="target.hole"
-                    )
+                    yield f"Invalid call hole ${{{hole}}}"
     elif is_type:
-        value = item.values(TYPE_NAME)
+        value = item.values_of("type_name")
         if not value or not (isinstance(value[0], str) or callable(value[0])):
-            yield Diagnostic(
-                "Type spelling requires string or callable", code="target.type"
-            )
-    elif item.has(NAMING) and item.has(REQUIREMENT_LINE):
-        if holes_in(item.values(REQUIREMENT_LINE)[0]) - {"name"}:
-            yield Diagnostic(
-                "Requirement line only accepts ${name}", code="target.hole"
-            )
+            yield "Type spelling requires string or callable"
+    elif item.has_marker("naming") and item.has("requirement_line"):
+        if holes_in(cast(str, item.value("requirement_line"))) - {"name"}:
+            yield "Requirement line only accepts ${name}"
 
 
-entry_regulation = Shikumi(
-    information_types=ENTRY_TYPES,
-    validators=(*tuple(information_type_rule(t) for t in ENTRY_TYPES), _entry_validity),
-)
-
-
-@validator(focus=StructuralKind.ENTITY, name="target.pack_validity")
-def _pack_validity(view: SemanticView) -> Iterator[Diagnostic]:
-    item = view.focused
-    if not item.has(PACK_TARGET) or not item.values(PACK_TARGET)[0]:
-        yield Diagnostic("Target Pack missing target", code="pack.target")
-    if item.has(PACK_DISPATCH) and item.values(PACK_DISPATCH)[0] not in (
+def _pack_validity(item: Declaration) -> Iterator[str]:
+    if not item.has("target") or not item.value("target"):
+        yield "Target Pack missing target"
+    if item.has("dispatch") and item.value("dispatch") not in (
         "composition",
         "structural",
     ):
-        yield Diagnostic("Invalid Target dispatch mode", code="pack.dispatch")
-    semantics = (
-        item.values(PACK_SEMANTICS)[0] if item.has(PACK_SEMANTICS) else "preservation"
-    )
-    unhandled = item.values(PACK_UNHANDLED)[0] if item.has(PACK_UNHANDLED) else "error"
-    dispatch = (
-        item.values(PACK_DISPATCH)[0] if item.has(PACK_DISPATCH) else "composition"
-    )
+        yield "Invalid Target dispatch mode"
+    semantics = item.value("semantics") if item.has("semantics") else "preservation"
+    unhandled = item.value("unhandled") if item.has("unhandled") else "error"
+    dispatch = item.value("dispatch") if item.has("dispatch") else "composition"
     if semantics not in ("preservation", "projection"):
-        yield Diagnostic("Invalid Target semantics mode", code="pack.semantics")
+        yield "Invalid Target semantics mode"
     if unhandled not in ("error", "traverse"):
-        yield Diagnostic("Invalid unhandled Construct policy", code="pack.unhandled")
+        yield "Invalid unhandled Construct policy"
     if unhandled == "traverse" and (
         dispatch != "structural" or semantics != "projection"
     ):
-        yield Diagnostic(
-            "Unhandled traverse needs structural dispatch and projection semantics",
-            code="pack.unhandled",
-        )
-    if item.has(PACK_RUNTIME) and item.values(PACK_RUNTIME)[0] not in (
+        yield "Unhandled traverse needs structural dispatch and projection semantics"
+    if item.has("runtime") and item.value("runtime") not in (
         "required",
         "forbidden",
         "optional",
         "ignored",
     ):
-        yield Diagnostic("Invalid Target runtime policy", code="pack.runtime")
+        yield "Invalid Target runtime policy"
     if (
-        item.has(PACK_RUNTIME)
-        and item.values(PACK_RUNTIME)[0] in ("required", "optional")
-        and not item.has(PACK_SESSION)
+        item.has("runtime")
+        and item.value("runtime") in ("required", "optional")
+        and not item.has("session")
     ):
-        yield Diagnostic(
-            "Runtime-enabled Target needs an artifact session", code="pack.session"
-        )
-    if item.has(PACK_RUNTIME_SCHEMA):
-        schema = item.values(PACK_RUNTIME_SCHEMA)[0]
+        yield "Runtime-enabled Target needs an artifact session"
+    if item.has("runtime_schema"):
+        schema = item.value("runtime_schema")
         if not is_runtime_schema(schema):
-            yield Diagnostic(
-                "Runtime schema must be a type or a callable validator",
-                code="pack.runtime_schema",
-            )
-        if (
-            item.values(PACK_RUNTIME)[0] if item.has(PACK_RUNTIME) else "ignored"
-        ) not in ("required", "optional"):
-            yield Diagnostic(
-                "Runtime schema needs required or optional runtime policy",
-                code="pack.runtime_schema",
-            )
-    if item.has(PACK_SESSION) and not callable(item.values(PACK_SESSION)[0]):
-        yield Diagnostic(
-            "Artifact session factory must be callable", code="pack.session"
-        )
+            yield "Runtime schema must be a type or a callable validator"
+        if (item.value("runtime") if item.has("runtime") else "ignored") not in (
+            "required",
+            "optional",
+        ):
+            yield "Runtime schema needs required or optional runtime policy"
+    if item.has("session") and not callable(item.value("session")):
+        yield "Artifact session factory must be callable"
     if (
-        item.has(PACK_DISPATCH)
-        and item.values(PACK_DISPATCH)[0] == "structural"
-        and not item.has(PACK_SESSION)
+        item.has("dispatch")
+        and item.value("dispatch") == "structural"
+        and not item.has("session")
     ):
-        yield Diagnostic(
-            "Structural Target needs an artifact session", code="pack.session"
-        )
-    if not item.has(PACK_ENTRIES):
-        yield Diagnostic("Target Pack missing entries", code="pack.entries")
-    elif not all(isinstance(entry, type) for entry in item.values(PACK_ENTRIES)[0]):
-        yield Diagnostic("Pack entries must be classes", code="pack.entries")
+        yield "Structural Target needs an artifact session"
+    if not item.has("entries"):
+        yield "Target Pack missing entries"
+    elif not all(
+        isinstance(entry, type)
+        for entry in cast(tuple[object, ...], item.value("entries"))
+    ):
+        yield "Pack entries must be classes"
 
 
-pack_regulation = Shikumi(
-    information_types=(
-        PACK_TARGET,
-        PACK_ENTRIES,
-        PACK_DISPATCH,
-        PACK_SESSION,
-        PACK_SEMANTICS,
-        PACK_UNHANDLED,
-        PACK_RUNTIME,
-        PACK_RUNTIME_SCHEMA,
-    ),
-    validators=(
-        information_type_rule(PACK_TARGET),
-        information_type_rule(PACK_ENTRIES),
-        information_type_rule(PACK_DISPATCH),
-        information_type_rule(PACK_SESSION),
-        information_type_rule(PACK_SEMANTICS),
-        information_type_rule(PACK_UNHANDLED),
-        information_type_rule(PACK_RUNTIME),
-        information_type_rule(PACK_RUNTIME_SCHEMA),
-        _pack_validity,
-    ),
-)
+def read_entry(declaration: object) -> Declaration:
+    """Read and validate one realization or naming entry class."""
+    return require(
+        declaration,
+        _entry_validity,
+        fields=ENTRY_FIELDS,
+        markers=ROLE_MARKERS,
+        label="Invalid target entry",
+    )
+
+
+def read_pack(pack: object) -> Declaration:
+    """Read and validate one Target Pack class."""
+    return require(
+        pack, _pack_validity, fields=PACK_FIELDS, label="Invalid Target Pack"
+    )

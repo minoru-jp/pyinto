@@ -26,7 +26,7 @@ class _OnlyValues:
 
 def test_statements_normalize_with_no_frontend_inheritance() -> None:
     ctx = ParseContext()
-    port = InterfaceMappingNormalizer(
+    mapping = InterfaceMappingNormalizer(
         ctx,
         InterfaceMappingRegistry(),
         value=lambda _: Literal("unused"),
@@ -34,7 +34,7 @@ def test_statements_normalize_with_no_frontend_inheritance() -> None:
     )
     statements = StatementNormalizer(
         ctx,
-        port,
+        mapping,
         _OnlyValues(),  # type: ignore[arg-type] - intentionally narrow test double
     )
     result = statements._block(ast.parse('print("ok")').body)

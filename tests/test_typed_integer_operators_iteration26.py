@@ -22,7 +22,7 @@ from pyinto.constructs import (
 from pyinto.constructs.admission import required_contracts
 from pyinto.frontend import PythonFrontend, UnsupportedPython
 from pyinto.realizations.registry import EmitContext, RealizationRegistry
-from pyinto.realizations.regulation import realizes, supports, template
+from pyinto.realizations.regulation import realizes
 from tests.support.c_realizer import c_bindings
 from tests.support.python_realizer.pack import python_bindings
 
@@ -181,13 +181,13 @@ def test_realization_admission_rejects_unclaimed_semantics_before_mutation() -> 
 
     @realizes(Arithmetic)
     class UnsafeBit:
-        template @= "${left} << ${right}"
-        supports @= ("evaluation.operands.left_to_right",)
+        template = "${left} << ${right}"
+        supports = ("evaluation.operands.left_to_right",)
 
     @realizes(IntegerTrueDivision)
     class UnsafeDivision:
-        template @= "${left} / ${right}"
-        supports @= ("evaluation.operands.left_to_right",)
+        template = "${left} / ${right}"
+        supports = ("evaluation.operands.left_to_right",)
 
     for node, recipe, missing in (
         (bit, UnsafeBit, "integer.bitwise.unbounded"),

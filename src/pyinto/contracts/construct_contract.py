@@ -2,14 +2,14 @@
 
 from shikumi_contrace import INV, POST, kind, member, subject
 
-from pyinto.contracts.ports.pipeline import CompositionPort, FrontendPort
+from pyinto.contracts.boundaries.pipeline import CompositionBoundary, FrontendBoundary
 
 
 class FrontendContract:
-    subject @= FrontendPort
+    subject @= FrontendBoundary
 
     class parse:
-        member @= FrontendPort.parse
+        member @= FrontendBoundary.parse
 
         class TypedNames:
             """Every variable definition requires an annotation; reassignment uses it."""
@@ -43,7 +43,7 @@ class FrontendContract:
 
 
 class ConstructContract:
-    subject @= CompositionPort
+    subject @= CompositionBoundary
 
     class PureStructure:
         """Constructs expose named child positions; none owns target output logic."""
@@ -81,7 +81,7 @@ class ConstructContract:
         kind @= INV
 
     class source:
-        member @= CompositionPort.source
+        member @= CompositionBoundary.source
 
         class Compiles:
             """Supported normalized operations produce runnable standalone C."""

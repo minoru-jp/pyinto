@@ -20,14 +20,7 @@ from pyinto.realizations.artifacts import TextArtifactSession
 from pyinto.realizations.host import RealizationHost
 from pyinto.realizations.registry import Composer, EmitContext, RealizationRegistry
 from pyinto.realizations.regulation import (
-    pack_dispatch,
-    pack_entries,
-    pack_session,
-    pack_target,
     realizes,
-    template,
-    variant,
-    visit,
 )
 from tests.support.c_realizer import c_bindings
 from tests.support.python_realizer.pack import python_bindings
@@ -61,30 +54,30 @@ def _record(node: object, ctx: EmitContext) -> None:
 
 @realizes(lang.Program)
 class ProgramVisitor:
-    visit @= _record
+    visit = _record
 
 
 @realizes(lang.Block)
 class BlockVisitor:
-    visit @= _record
+    visit = _record
 
 
 @realizes(lang.Initialize)
 class InitializeVisitor:
-    visit @= _record
+    visit = _record
 
 
 @realizes(lang.Literal)
 class LiteralVisitor:
-    variant @= "integer"
-    visit @= _record
+    variant = "integer"
+    visit = _record
 
 
 class StructuredPack:
-    pack_target @= "structure"
-    pack_entries @= (ProgramVisitor, BlockVisitor, InitializeVisitor, LiteralVisitor)
-    pack_dispatch @= "structural"
-    pack_session @= ArtifactCollector
+    target = "structure"
+    entries = (ProgramVisitor, BlockVisitor, InitializeVisitor, LiteralVisitor)
+    dispatch = "structural"
+    session = ArtifactCollector
 
 
 def test_structural_dispatch_preorder_context_and_arbitrary_artifacts() -> None:
@@ -110,7 +103,7 @@ def test_structural_dispatch_preorder_context_and_arbitrary_artifacts() -> None:
 def test_structural_visits_shared_construct_once_per_occurrence() -> None:
     @realizes(lang.ExpressionStatement)
     class ExpressionVisitor:
-        visit @= _record
+        visit = _record
 
     registry = RealizationRegistry(
         "structure",
@@ -142,7 +135,7 @@ def test_admission_checks_structural_contracts_before_visit_or_finish() -> None:
 
     @realizes(lang.For)
     class UnsupportedFor:
-        visit @= _record
+        visit = _record
 
     registry = RealizationRegistry(
         "structure",
@@ -164,10 +157,10 @@ def test_admission_checks_structural_contracts_before_visit_or_finish() -> None:
 
 def test_structural_requires_explicit_realization_for_every_construct() -> None:
     class IncompletePack:
-        pack_target @= "incomplete"
-        pack_entries @= (ProgramVisitor,)
-        pack_dispatch @= "structural"
-        pack_session @= ArtifactCollector
+        target = "incomplete"
+        entries = (ProgramVisitor,)
+        dispatch = "structural"
+        session = ArtifactCollector
 
     with pytest.raises(ConstructError, match="No 'incomplete' realization for Block"):
         convert(
@@ -178,7 +171,7 @@ def test_structural_requires_explicit_realization_for_every_construct() -> None:
 def test_structural_visitor_must_not_return_artifact_fragments() -> None:
     @realizes(lang.Program)
     class Bad:
-        visit @= lambda node, ctx: "not permitted"
+        visit = lambda node, ctx: "not permitted"
 
     registry = RealizationRegistry(
         "bad", (Bad,), dispatch="structural", session_factory=ArtifactCollector
@@ -190,7 +183,7 @@ def test_structural_visitor_must_not_return_artifact_fragments() -> None:
 def test_dispatch_mode_declaration_rejects_incompatible_entries() -> None:
     @realizes(lang.Program)
     class ProgramTemplate:
-        template @= "${body}"
+        template = "${body}"
 
     with pytest.raises(ValueError, match="dispatch does not match"):
         RealizationRegistry(
@@ -208,10 +201,10 @@ def test_dispatch_mode_declaration_rejects_incompatible_entries() -> None:
 @pytest.mark.parametrize("mode", ["invalid", "", "STRUCTURAL"])
 def test_invalid_pack_modes_rejected(mode: str) -> None:
     class BadPack:
-        pack_target @= "bad"
-        pack_entries @= ()
-        pack_dispatch @= mode
-        pack_session @= ArtifactCollector
+        target = "bad"
+        entries = ()
+        dispatch = mode
+        session = ArtifactCollector
 
     with pytest.raises(ValueError, match="Invalid Target dispatch mode"):
         RealizationRegistry.from_pack(BadPack)
@@ -219,9 +212,9 @@ def test_invalid_pack_modes_rejected(mode: str) -> None:
 
 def test_missing_structural_session_rejected_by_pack() -> None:
     class BadPack:
-        pack_target @= "bad"
-        pack_entries @= ()
-        pack_dispatch @= "structural"
+        target = "bad"
+        entries = ()
+        dispatch = "structural"
 
     with pytest.raises(ValueError, match="needs an artifact session"):
         RealizationRegistry.from_pack(BadPack)
@@ -240,20 +233,20 @@ def test_composition_is_unchanged_and_artifact_owned_by_target() -> None:
 
     @realizes(lang.Program)
     class ProgramTemplate:
-        template @= "${body}"
+        template = "${body}"
 
     @realizes(lang.Block)
     class BlockTemplate:
-        template @= "${children}"
+        template = "${children}"
 
     @realizes(lang.Initialize)
     class InitializeTemplate:
-        template @= "${name} = ${value}"
+        template = "${name} = ${value}"
 
     @realizes(lang.Literal)
     class LiteralTemplate:
-        variant @= "integer"
-        template @= "1"
+        variant = "integer"
+        template = "1"
 
     registry = RealizationRegistry(
         "bytes",

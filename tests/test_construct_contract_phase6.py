@@ -25,7 +25,7 @@ from pyinto.constructs import (
 )
 from pyinto.constructs.admission import LANGUAGE_ADMISSION
 from pyinto.realizations.registry import Composer, RealizationRegistry
-from pyinto.realizations.regulation import realizes, supports, template, variant
+from pyinto.realizations.regulation import realizes
 
 
 def _number(name: str = "n") -> Symbol:
@@ -90,21 +90,21 @@ def test_cst_013_possible_names_are_not_mandatory_slots() -> None:
 def test_cmp_012_static_with_entry_is_accepted_and_composed() -> None:
     @realizes(With)
     class WithRule:
-        supports @= ("context.with.enter_exit_exception",)
-        template @= "${entry0} / ${body}"
+        supports = ("context.with.enter_exit_exception",)
+        template = "${entry0} / ${body}"
 
     @realizes(ContextEntry)
     class EntryRule:
-        template @= "${context}"
+        template = "${context}"
 
     @realizes(Block)
     class BlockRule:
-        template @= "${children}"
+        template = "${children}"
 
     @realizes(Literal)
     class LiteralRule:
-        variant @= "integer"
-        template @= "one"
+        variant = "integer"
+        template = "one"
 
     composer = Composer(
         RealizationRegistry("test", (WithRule, EntryRule, BlockRule, LiteralRule))
@@ -116,8 +116,8 @@ def test_cmp_012_static_with_entry_is_accepted_and_composed() -> None:
 def test_cmp_012_missing_dynamic_part_is_rejected_at_composition() -> None:
     @realizes(With)
     class WithRule:
-        supports @= ("context.with.enter_exit_exception",)
-        template @= "${entry1}"
+        supports = ("context.with.enter_exit_exception",)
+        template = "${entry1}"
 
     registry = RealizationRegistry("test", (WithRule,))
     with pytest.raises(ConstructError, match="Unfilled template holes"):
@@ -127,7 +127,7 @@ def test_cmp_012_missing_dynamic_part_is_rejected_at_composition() -> None:
 def test_cmp_012_unknown_model_part_rejected_at_pack_validation() -> None:
     @realizes(With)
     class BadWithRule:
-        template @= "${entry_unknown}"
+        template = "${entry_unknown}"
 
     with pytest.raises(ValueError, match="unknown template hole"):
         RealizationRegistry("test", (BadWithRule,))
@@ -142,12 +142,12 @@ def test_cst_013_existing_custom_construct_holes_remain_supported() -> None:
 
     @realizes(Custom)
     class CustomRule:
-        template @= "${value}"
+        template = "${value}"
 
     @realizes(Literal)
     class LiteralRule:
-        variant @= "integer"
-        template @= "1"
+        variant = "integer"
+        template = "1"
 
     assert (
         Composer(

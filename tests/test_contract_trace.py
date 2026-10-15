@@ -3,31 +3,31 @@
 from shikumi_contrace.checking import check
 from shikumi_contrace.reading import untested_clauses
 
+from pyinto.contracts.class_mapping_contract import ClassMappingContract
 from pyinto.contracts.construct_contract import ConstructContract, FrontendContract
-from pyinto.contracts.memory_port_contract import MemoryPortContract
-from pyinto.contracts.port_contract import PortContract
+from pyinto.contracts.function_mapping_contract import FunctionMappingContract
 from tests import (
+    test_class_mapping,
     test_construct_pipeline,
     test_language_bindings,
     test_loop_and_context,
-    test_memory_port,
-    test_port_integration,
+    test_mapping_integration,
 )
 
 
 def test_all_clauses_have_tests() -> None:
     within = (
         test_construct_pipeline,
+        test_class_mapping,
         test_language_bindings,
         test_loop_and_context,
-        test_memory_port,
-        test_port_integration,
+        test_mapping_integration,
     )
     for contract in (
         ConstructContract,
         FrontendContract,
-        MemoryPortContract,
-        PortContract,
+        ClassMappingContract,
+        FunctionMappingContract,
     ):
         missing = untested_clauses(contract, within=within)
         assert not missing, [clause.path for clause in missing]
@@ -65,8 +65,8 @@ def test_contract_structure_valid() -> None:
             "tests.support.c_realizer.pack",
             "tests.support.python_realizer.pack",
             "pyinto.interface_mapping.registry",
-            "demo_ports_pyinto.adapter",
-            "demo_memory_ports_pyinto.adapter",
+            "demo_device_pyinto.adapter",
+            "tests.support.class_mapping",
         ],
     )
     assert not findings, [finding.message for finding in findings]

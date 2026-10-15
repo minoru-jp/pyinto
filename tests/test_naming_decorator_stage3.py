@@ -8,24 +8,17 @@ from pyinto.constructs import ConstructError
 from pyinto.interfaces import language as lang
 from pyinto.realizations.registry import EmitContext, RealizationRegistry
 from pyinto.realizations.regulation import (
-    forbidden_prefixes,
     naming,
-    pack_entries,
-    pack_target,
     realizes,
-    requirement_line,
-    reserved,
-    supports,
-    template,
 )
 
 
 def test_marker_preserves_all_naming_policy_information() -> None:
     @naming
     class CNames:
-        reserved @= frozenset({"while", "auto"})
-        forbidden_prefixes @= ("__", "pyinto_")
-        requirement_line @= "#include <${name}>"
+        reserved = frozenset({"while", "auto"})
+        forbidden_prefixes = ("__", "pyinto_")
+        requirement_line = "#include <${name}>"
 
     registry = RealizationRegistry("c", (CNames,))
     assert registry.name("local") == "local"
@@ -40,15 +33,15 @@ def test_marker_preserves_all_naming_policy_information() -> None:
 def test_separate_naming_definitions_with_equal_rules_behave_the_same() -> None:
     @naming
     class First:
-        reserved @= frozenset({"switch"})
-        forbidden_prefixes @= ("__",)
-        requirement_line @= '#include "${name}"'
+        reserved = frozenset({"switch"})
+        forbidden_prefixes = ("__",)
+        requirement_line = '#include "${name}"'
 
     @naming
     class Second:
-        reserved @= frozenset({"switch"})
-        forbidden_prefixes @= ("__",)
-        requirement_line @= '#include "${name}"'
+        reserved = frozenset({"switch"})
+        forbidden_prefixes = ("__",)
+        requirement_line = '#include "${name}"'
 
     first = RealizationRegistry("c", (First,))
     second = RealizationRegistry("c", (Second,))
@@ -69,8 +62,8 @@ def test_naming_default_policy_can_be_registered_from_pack() -> None:
         pass
 
     class CTargetPack:
-        pack_target @= "c"
-        pack_entries @= (DefaultNaming,)
+        target = "c"
+        entries = (DefaultNaming,)
 
     registry = RealizationRegistry.from_pack(CTargetPack)
     assert registry.name("regular_name") == "regular_name"
@@ -83,14 +76,14 @@ def test_naming_and_realizes_are_mutually_exclusive(reverse: bool) -> None:
         @naming
         @realizes(lang.While)
         class Invalid:
-            template @= "while (${condition}) {${body}}"
+            template = "while (${condition}) {${body}}"
 
     else:
 
         @realizes(lang.While)
         @naming
         class Invalid:
-            template @= "while (${condition}) {${body}}"
+            template = "while (${condition}) {${body}}"
 
     with pytest.raises(ValueError, match="exactly one role"):
         RealizationRegistry("c", (Invalid,))
@@ -114,7 +107,7 @@ def test_two_distinct_naming_definitions_are_rejected() -> None:
 def test_naming_requirement_slot_stays_restricted() -> None:
     @naming
     class Invalid:
-        requirement_line @= "#include <${unknown}>"
+        requirement_line = "#include <${unknown}>"
 
     with pytest.raises(ValueError, match="Requirement line only accepts"):
         RealizationRegistry("c", (Invalid,))
@@ -123,7 +116,7 @@ def test_naming_requirement_slot_stays_restricted() -> None:
 def test_naming_cannot_claim_construct_contracts() -> None:
     @naming
     class Invalid:
-        supports @= ("call.arguments.bound",)
+        supports = ("call.arguments.bound",)
 
     with pytest.raises(ValueError, match="supports belongs"):
         RealizationRegistry("c", (Invalid,))
@@ -131,7 +124,7 @@ def test_naming_cannot_claim_construct_contracts() -> None:
 
 def test_naming_cannot_be_used_without_explicit_role() -> None:
     class Undeclared:
-        reserved @= frozenset({"switch"})
+        reserved = frozenset({"switch"})
 
     with pytest.raises(ValueError, match="exactly one role"):
         RealizationRegistry("c", (Undeclared,))

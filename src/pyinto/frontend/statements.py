@@ -47,6 +47,7 @@ from pyinto.constructs.type_rules import assignable
 from .context import ParseContext
 from .errors import reject
 from .interface_mapping import InterfaceMappingNormalizer
+from .kinds import MEMORY_OPERATIONS, memory_operation, pointer_operation
 from .statement_services import StatementServices
 
 
@@ -217,7 +218,7 @@ class StatementNormalizer:
                 signature.return_type,
             )
             if signature.return_type.kind not in (ValueKind.ANY, ValueKind.OBJECT) and (
-                value.kind is ValueKind.PORT_OBJECT
+                value.kind is ValueKind.MAPPED_OBJECT
                 or not assignable(signature.return_type, value.value_type)
             ):
                 raise reject(node, "Return type mismatch")
@@ -266,17 +267,17 @@ class StatementNormalizer:
                 or name in self._context.classes.class_types
             ):
                 raise reject(
-                    node, "Cannot shadow a built-in, function or imported Port"
+                    node, "Cannot shadow a built-in, function or imported mapped name"
                 )
             if name in self._context.names.symbols:
                 raise reject(node, "Variable already declared; use assignment")
             annotation, declared_type = self._services._annotation(node.annotation)
             declared = (
-                ValueKind.PORT_OBJECT if declared_type is None else declared_type.kind
+                ValueKind.MAPPED_OBJECT if declared_type is None else declared_type.kind
             )
             if declared is ValueKind.NONE:
                 raise reject(node, "None is not a variable type")
-            if declared is ValueKind.PORT_OBJECT:
+            if declared is ValueKind.MAPPED_OBJECT:
                 if self._context.flow.control_local_bindings:
                     raise reject(
                         node,
@@ -286,7 +287,7 @@ class StatementNormalizer:
                     source_symbol = self._context.names.symbols.get(node.value.id)
                     if (
                         source_symbol is None
-                        or source_symbol.kind is not ValueKind.PORT_OBJECT
+                        or source_symbol.kind is not ValueKind.MAPPED_OBJECT
                     ):
                         raise reject(
                             node,
@@ -299,7 +300,7 @@ class StatementNormalizer:
                         )
                     symbol = Symbol(
                         name,
-                        source_symbol.port_type,
+                        source_symbol.mapped_type,
                         annotation,
                         scope=self._services._declaration_scope(),
                     )
@@ -404,8 +405,10 @@ class StatementNormalizer:
                         raise reject(
                             node, "Unpack assignment requires declared targets"
                         )
-                    if symbol.kind is ValueKind.PORT_OBJECT:
-                        raise reject(node, "Unpack assignment cannot rebind Ports")
+                    if symbol.kind is ValueKind.MAPPED_OBJECT:
+                        raise reject(
+                            node, "Unpack assignment cannot rebind mapped objects"
+                        )
                     if symbol.role in {
                         ParameterRole.RECEIVER,
                         ParameterRole.CLASS_RECEIVER,
@@ -500,7 +503,7 @@ class StatementNormalizer:
                     symbol.dict_type,
                     symbol.instance_type,
                 )
-                if symbol.kind is not ValueKind.PORT_OBJECT
+                if symbol.kind is not ValueKind.MAPPED_OBJECT
                 else None,
             )
             if symbol.kind not in (ValueKind.ANY, ValueKind.OBJECT) and (
@@ -531,10 +534,10 @@ class StatementNormalizer:
                 )
             ):
                 raise reject(node, "Variable type cannot change")
-            if symbol.kind is ValueKind.PORT_OBJECT:
+            if symbol.kind is ValueKind.MAPPED_OBJECT:
                 if (
                     not isinstance(value, Reference)
-                    or value.symbol.port_type != symbol.port_type
+                    or value.symbol.mapped_type != symbol.mapped_type
                 ):
                     raise reject(
                         node,
@@ -658,6 +661,16 @@ class StatementNormalizer:
 
         if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
             call = node.value
+            memory = memory_operation(call, self._context.names.kind_aliases)
+            if memory is not None and MEMORY_OPERATIONS[memory][1]:
+                return self._services._memory_statement(call, memory)
+            if memory is not None:
+                return ExpressionStatement(self._services._value(call))
+            operation = pointer_operation(call, self._context.names.kind_aliases)
+            if operation == "store":
+                return self._services._pointer_store(call)
+            if operation is not None:
+                return ExpressionStatement(self._services._value(call))
             if self._interface_mapping_normalizer.is_module_call(call):
                 return ExpressionStatement(
                     self._interface_mapping_normalizer.mapped_call(call)

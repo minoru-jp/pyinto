@@ -12,16 +12,7 @@ from pyinto.constructs import Block, Construct, ConstructError, Program
 from pyinto.interfaces import language as lang
 from pyinto.realizations.registry import EmitContext, RealizationRegistry
 from pyinto.realizations.regulation import (
-    pack_dispatch,
-    pack_entries,
-    pack_semantics,
-    pack_session,
-    pack_target,
-    pack_unhandled,
     realizes,
-    template,
-    variant,
-    visit,
 )
 
 
@@ -49,16 +40,16 @@ def _on_def(node: Construct, ctx: EmitContext) -> None:
 
 @realizes(lang.FunctionDefinition)
 class OnDef:
-    visit @= _on_def
+    visit = _on_def
 
 
 class OutlinePack:
-    pack_target @= "outline"
-    pack_dispatch @= "structural"
-    pack_semantics @= "projection"
-    pack_unhandled @= "traverse"
-    pack_entries @= (OnDef,)
-    pack_session @= OutlineSession
+    target = "outline"
+    dispatch = "structural"
+    semantics = "projection"
+    unhandled = "traverse"
+    entries = (OnDef,)
+    session = OutlineSession
 
 
 def test_minimal_projection_target_needs_no_noop_visitors_or_false_supports() -> None:
@@ -95,7 +86,7 @@ def test_projection_does_not_require_runtime_supports_for_matched_visitors() -> 
 
     @realizes(lang.Arithmetic)
     class OnArithmetic:
-        visit @= on_arithmetic
+        visit = on_arithmetic
 
     registry = RealizationRegistry(
         "ops",
@@ -131,20 +122,20 @@ def test_preservation_still_rejects_missing_contract_for_structural_visitor() ->
 
     @realizes(lang.Arithmetic)
     class OnArithmetic:
-        visit @= lambda node, ctx: Collector.called.append("visited")
+        visit = lambda node, ctx: Collector.called.append("visited")
 
     # Use a full set of no-op visitors for the ancestor path to reach Arithmetic.
     @realizes(lang.Program)
     class OnProgram:
-        visit @= lambda node, ctx: None
+        visit = lambda node, ctx: None
 
     @realizes(lang.Block)
     class OnBlock:
-        visit @= lambda node, ctx: None
+        visit = lambda node, ctx: None
 
     @realizes(lang.Initialize)
     class OnInitialize:
-        visit @= lambda node, ctx: None
+        visit = lambda node, ctx: None
 
     registry = RealizationRegistry(
         "strict",
@@ -169,8 +160,8 @@ def test_projection_traverse_matches_exact_variant_not_fallback() -> None:
 
     @realizes(lang.Literal)
     class IntegerOnly:
-        variant @= "integer"
-        visit @= lambda node, ctx: ctx.session.events.append("integer")
+        variant = "integer"
+        visit = lambda node, ctx: ctx.session.events.append("integer")
 
     registry = RealizationRegistry(
         "selective",
@@ -228,12 +219,12 @@ def test_invalid_pack_policy_combinations_rejected(
     semantic_mode: str, unhandled_mode: str, message: str
 ) -> None:
     class InvalidPack:
-        pack_target @= "bad"
-        pack_dispatch @= "structural"
-        pack_semantics @= semantic_mode
-        pack_unhandled @= unhandled_mode
-        pack_entries @= ()
-        pack_session @= OutlineSession
+        target = "bad"
+        dispatch = "structural"
+        semantics = semantic_mode
+        unhandled = unhandled_mode
+        entries = ()
+        session = OutlineSession
 
     with pytest.raises(ValueError, match=message):
         RealizationRegistry.from_pack(InvalidPack)
@@ -246,7 +237,7 @@ def test_projection_does_not_misroute_invalid_callback_or_hide_errors() -> None:
 
     @realizes(lang.FunctionDefinition)
     class BadVisitor:
-        visit @= lambda node, ctx: "illegal"
+        visit = lambda node, ctx: "illegal"
 
     registry = RealizationRegistry(
         "bad",
@@ -272,24 +263,24 @@ def test_legacy_composition_has_preservation_and_strict_defaults() -> None:
 def test_projection_semantics_are_independent_of_composition_dispatch() -> None:
     @realizes(lang.Program)
     class ProgramTemplate:
-        template @= "${body}"
+        template = "${body}"
 
     @realizes(lang.Block)
     class BlockTemplate:
-        template @= "${children}"
+        template = "${children}"
 
     @realizes(lang.Initialize)
     class InitTemplate:
-        template @= "${name} = ${value}"
+        template = "${name} = ${value}"
 
     @realizes(lang.Arithmetic)
     class AddTemplate:
-        template @= "${left} + ${right}"
+        template = "${left} + ${right}"
 
     @realizes(lang.Literal)
     class NumberTemplate:
-        variant @= "integer"
-        template @= "1"
+        variant = "integer"
+        template = "1"
 
     entries = (
         ProgramTemplate,

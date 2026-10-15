@@ -8,13 +8,15 @@ Canonical source: `devdocs/canonical_sources/vocabulary/canonical.py`
 
 # pyinto 用語集
 
-現行実装のAPI名と区別した、Model化・Target実装・合成の共有用語。
+現行実装のAPI名と区別した、Model化・Realizer・合成の共有用語。
 
 ## Model
 
-変換対象となる構造・機能・操作とその意味契約を、Target非依存に表したもの。
-Interfaceが所有するConstructと契約を利用する抽象面であり、特定Targetの
-実現方法は含めない。`Model.language.Branch`等の統一名前空間APIは未実装。
+1つのSourceからFrontendが作る、Constructの木（`Program`）。変換対象となる
+構造・機能・操作とその意味契約をTarget非依存に表し、特定Targetの実現方法は
+含めない。部品の種類を指すときはConstruct、抽象層全体を指すときは
+「Modelの層」と呼び分ける。`pyinto.model`はModelを作る部品の置き場であり、
+`Model.language.Branch`等の統一名前空間APIは未実装。
 
 ## Construct
 
@@ -71,13 +73,14 @@ Realizationを解決し、TemplateのSlotへ子の実現結果を再帰的・機
 成果物の実現先となる言語・環境・形式。CやRust等のコード生成は主要な用途。
 ModelはTargetに依存せず、具体的な実装単位とは区別する。
 
-## Target Implementation
+## Realizer
 
-特定のTargetでの実現を提供する実装単位の総称。言語構造向けの
+あるTarget向けのRealizationを束ねた実装一式。例：C Realizer
+（`tests/support/c_realizer/`）。入口の宣言がTarget Pack、中の個々の規則が
+Realizationであり、生成状態と成果物はRealizerが管理する。言語構造向けの
 Language Implementationと、抽象Interface向けのInterface Implementationを含む。
-個々の規則はRealizationであり、Targetが生成状態と成果物を管理する。
-新しい共通基底クラスを意味しない。
-旧文書での「Target Pack」「Target Cartridge」に対応する分類名。
+新しい共通基底クラスを意味しない。旧文書の「Target Implementation」
+「Target Cartridge」に当たる。
 
 ## Contract
 
@@ -100,7 +103,7 @@ Construct提供者のAdmissionが必要な契約を宣言し、Target側の
 
 `pyinto`本体のリポジトリ分類名。利用者向けSurface、共通Foundation、
 言語構造Interface、Python Source Adapterを同一の開発・配布単位で扱う。
-特定のTarget ImplementationはHost配布物に含めない。
+特定のRealizerはHost配布物に含めない。
 
 ## Surface
 
@@ -127,21 +130,47 @@ Construct・Admission・Realizationの登録、合成、描画等の共通機構
 
 Python側で登録済みの外部関数・クラス・メソッド等の表現を、対応するConstructへ
 結び付ける定義・機構。現行APIは`InterfaceMappingRegistry`等。
-抽象Interface自体の定義ではない。Model内部の`PortType`・`PORT_OBJECT`・
-`port:`キーは型同一性のため現行名を維持している。
+抽象Interface自体の定義ではなく、Kindの`@Interface`とも別である。関数の対応付けを
+関数マッピング、クラスの対応付けをクラスマッピングと呼ぶ。クラスマッピングで
+生成したオブジェクト（マップ済みオブジェクト）は、Model上で`MappedType`・
+`ValueKind.MAPPED_OBJECT`・型表記の鍵`mapped:`で表す。
 
 ## Language Implementation
 
-Language ConstructをあるTargetで実現するTarget Implementation。
+Language ConstructをあるTargetで実現するRealizer。
 Cの参照実装は現在`tests/support/c_realizer/`にあり、
 公開Hostの配布パッケージには含めない。
 
 ## Interface Implementation
 
 抽象Interfaceが定義したConstructを、あるTargetの言語・ライブラリ等で
-実現するTarget Implementation。個別の利用ライブラリとの1対1対応は必須でない。
+実現するRealizer。個別の利用ライブラリとの1対1対応は必須でない。
 
 ## Bundle
 
-複数のInterfaceやTarget Implementation等を組み合わせた公開単位の暫定名。
+複数のInterfaceやRealizer等を組み合わせた公開単位の暫定名。
 自動発見・合成・配布の専用機構は現時点で未実装。
+
+## Kind
+
+`pyinto.kinds` が提供する、Targetへ型・メモリ・宣言の情報を渡すための語彙。
+公開面 `datatypes` / `memory` / `declarations` と、全Targetが解釈する
+`general` の段・言語に近い選択肢である `detailed` の段に分かれる。
+Hostは意味を定義せず、ラベルとしてModelに記録しTargetへ渡すだけで、
+具体的な表現の選択と実行結果はTargetとそのコードに属する。
+
+## Source
+
+pyinto向けに書くPythonのテキスト。Hostが読み、Modelに正規化する。
+`__pyinto_runtime__` を使う場合を除き、Pythonとして実行されることは想定しない。
+
+## Target Pack
+
+Realizerの入口となる宣言クラス。`target`・`entries`・`dispatch`・`session`
+などを通常のクラス属性で宣言し、`RealizationRegistry.from_pack()` に渡す。
+Realizerそのものではなく、その宣言の形を指す。
+
+## Artifact
+
+Realizerが出す成果物。`convert()` / `realize()` の戻り値であり、
+文字列に限らず任意のオブジェクトでよい。Hostは中身を解釈しない。

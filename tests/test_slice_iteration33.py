@@ -21,7 +21,7 @@ from pyinto.constructs import (
 from pyinto.constructs.admission import LANGUAGE_ADMISSION, required_contracts
 from pyinto.frontend import PythonFrontend, UnsupportedPython
 from pyinto.realizations.registry import EmitContext, RealizationRegistry
-from pyinto.realizations.regulation import realizes, supports, template, variant
+from pyinto.realizations.regulation import realizes
 
 
 def _value(source: str) -> object:
@@ -185,9 +185,9 @@ def test_slice_realization_missing_obligation_is_rejected() -> None:
 
     @realizes(SliceValue)
     class Incomplete:
-        variant @= "list"
-        template @= "${source}"
-        supports @= (
+        variant = "list"
+        template = "${source}"
+        supports = (
             "slice.evaluate_source_bounds_once_in_order",
             "slice.python_indices_and_zero_step",
         )
@@ -198,9 +198,9 @@ def test_slice_realization_missing_obligation_is_rejected() -> None:
 
     @realizes(SliceValue)
     class Declared:
-        variant @= "list"
-        template @= "${source}"
-        supports @= (
+        variant = "list"
+        template = "${source}"
+        supports = (
             "slice.evaluate_source_bounds_once_in_order",
             "slice.python_indices_and_zero_step",
             "slice.list.shallow_outer_copy",

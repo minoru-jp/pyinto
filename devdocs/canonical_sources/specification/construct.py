@@ -41,9 +41,9 @@ class SPECIFICATION_PART:
         level @= MUST
 
     class CST_002:
-        """値を持つ `Symbol` は新規宣言時の型アノテーションを保持しなければならない。`Symbol.type` は通常の値宣言では再帰的 `ValueType` を1つ保持し、Port オブジェクトでは `PortType` を保持して、その source・variant・整数制約を区別する。組み込み専用シンボルは `type=None` とする。`kind` と各型形状の参照属性は `type` から読み取る派生情報であり、別々の保存フィールドではない。Port と組み込み専用シンボルを一般の `ValueType` に暗黙変換しない。Python の型情報から Target 固有の型表現は決定しない。"""
+        """値を持つ `Symbol` は新規宣言時の型アノテーションを保持しなければならない。`Symbol.type` は通常の値宣言では再帰的 `ValueType` を1つ保持し、マップ済みオブジェクトでは `MappedType` を保持して、その source と variant を区別する。`MappedType` はコンストラクタ引数や数値の範囲・サイズを保持しない。組み込み専用シンボルは `type=None` とする。`kind` と各型形状の参照属性は `type` から読み取る派生情報であり、別々の保存フィールドではない。マップ済みオブジェクトと組み込み専用シンボルを一般の `ValueType` に暗黙変換しない。Python の型情報から Target 固有の型表現は決定しない。"""
 
-        title @= "型とPortオブジェクト形状の保持（現行Model名）"
+        title @= "型とマップ済みオブジェクト形状の保持（現行Model名）"
         level @= MUST
 
     class CST_003:
@@ -155,13 +155,13 @@ class SPECIFICATION_PART:
         level @= MUST
 
     class CST_020:
-        """`ValueKind.FUNCTION` は第一級関数値の種別であり、`CallableType` は位置引数の `ValueType` 列と戻り値の `ValueType` から成る Target 非依存の関数型である。`ValueType` は関数型について再帰的な `CallableType` を保持し、関数型以外への不正な付加および関数型の形状欠落を生成時に拒否する。関数型の整合性は型形状の厳密一致で判断し、Python の任意の Callable の部分型関係を推論しない。通常の `Value` は一つの `value_type` から `kind` および関数・タプル・リスト・辞書・インスタンスの型形状を読み取る。スカラー値だけは既存の値種別から `ValueType` を導出してよいが、構造型の値について型形状を独立した複数の規則として保持しない。Port 参照には通常の `ValueType` を強要しない。関数値の宣言・代入・直接関数呼出の引数整合性は既存の `Initialize` / `Assign` / `FunctionCall` の契約を拡張して検証する。"""
+        """`ValueKind.FUNCTION` は第一級関数値の種別であり、`CallableType` は位置引数の `ValueType` 列と戻り値の `ValueType` から成る Target 非依存の関数型である。`ValueType` は関数型について再帰的な `CallableType` を保持し、関数型以外への不正な付加および関数型の形状欠落を生成時に拒否する。関数型の整合性は型形状の厳密一致で判断し、Python の任意の Callable の部分型関係を推論しない。通常の `Value` は一つの `value_type` から `kind` および関数・タプル・リスト・辞書・インスタンスの型形状を読み取る。スカラー値だけは既存の値種別から `ValueType` を導出してよいが、構造型の値について型形状を独立した複数の規則として保持しない。マップ済みオブジェクトの参照には通常の `ValueType` を強要しない。関数値の宣言・代入・直接関数呼出の引数整合性は既存の `Initialize` / `Assign` / `FunctionCall` の契約を拡張して検証する。"""
 
         title @= "第一級関数値の構造型と型整合性"
         level @= MUST
 
     class CST_021:
-        """既存 `FunctionSignature` は宣言そのものの識別と直接呼出のために維持する。型情報が完全な署名は、同一宣言に安定して結び付く `value_symbol`（`ValueKind.FUNCTION` と対応する `CallableType` を持つ `Symbol`）を公開する。`Reference` は既存クラスのまま関数宣言や関数型変数を値として参照し、`FunctionCall` が関数型を返す場合は戻り値の `CallableType` を伝播する。入れ子関数、捕捉変数、関数値が生じる実行ごとの環境は、署名と既存のレキシカル参照構造から区別し、Runtime 上の関数値のインスタンス同一性や格納方式を Model は決めない。Port 形状を持つ仮引数の関数署名は従来の直接呼出を維持し、関数値への変換だけを拒否する。戻り型には `ValueType` を要求し、未定義の Port 戻り型を推測して構築しない。"""
+        """既存 `FunctionSignature` は宣言そのものの識別と直接呼出のために維持する。型情報が完全な署名は、同一宣言に安定して結び付く `value_symbol`（`ValueKind.FUNCTION` と対応する `CallableType` を持つ `Symbol`）を公開する。`Reference` は既存クラスのまま関数宣言や関数型変数を値として参照し、`FunctionCall` が関数型を返す場合は戻り値の `CallableType` を伝播する。入れ子関数、捕捉変数、関数値が生じる実行ごとの環境は、署名と既存のレキシカル参照構造から区別し、Runtime 上の関数値のインスタンス同一性や格納方式を Model は決めない。マップ済みの形状を持つ仮引数の関数署名は従来の直接呼出を維持し、関数値への変換だけを拒否する。戻り型には `ValueType` を要求し、未定義のマップ済みの戻り型を推測して構築しない。"""
 
         title @= "関数宣言と関数値の参照経路の分離"
         level @= MUST
@@ -471,7 +471,7 @@ class SPECIFICATION_PART:
         level @= MUST
 
     class CST_070:
-        """`UnpackAssign(targets, value)` は既宣言の通常型付き Reference の固定長列と、同じ要素数を持つ型付き Tuple Value を保持する。各位置の型の代入可能性を Model 構築時に検証し、長さや型の不一致、Portの再束縛、Receiverの再束縛を拒否する。実行時には右辺全体を一度だけ評価して各位置の値をすべて確定させ、その後左から右の順で対象へ代入する。重複した対象名は許可し、後に代入した値が残る。`a, b = b, a` を独立した Assign 列に脱糖せず、Target固有の一時変数配置も決めない。Realizationは RHS 保存と代入順序の契約を満たせなければ拒否する。"""
+        """`UnpackAssign(targets, value)` は既宣言の通常型付き Reference の固定長列と、同じ要素数を持つ型付き Tuple Value を保持する。各位置の型の代入可能性を Model 構築時に検証し、長さや型の不一致、マップ済みオブジェクトの再束縛、Receiverの再束縛を拒否する。実行時には右辺全体を一度だけ評価して各位置の値をすべて確定させ、その後左から右の順で対象へ代入する。重複した対象名は許可し、後に代入した値が残る。`a, b = b, a` を独立した Assign 列に脱糖せず、Target固有の一時変数配置も決めない。Realizationは RHS 保存と代入順序の契約を満たせなければ拒否する。"""
 
         title @= "固定長Tupleの一括アンパック代入"
         level @= MUST
@@ -486,4 +486,40 @@ class SPECIFICATION_PART:
         """`IterationEntry(target, iterable, introduces_binding)` は反復入口で更新する一つの型付き Symbol の `Reference` と反復元 Value を保持する。`introduces_binding=False` は既存の型付き束縛の反復更新、`True` は反復入口での新規束縛導入を示す。いずれも各反復で同じ Symbol を更新し、反復ごとの別 Symbol は生成しない。空の反復元では導入変数が一度も束縛されない可能性があり、Modelは架空の初期値や `Initialize` を挿入しない。導入フラグはTarget固有の変数宣言の配置を決定せず、`parts()` は従来の `target` と `iterable` だけを公開する。導入形を実現するには、Construct提供側の `iteration.binding.introduced` 契約への支持が別途必要であり、従来の反復形式・break/continue・正常終了elseの義務も残る。既存の型付き反復入口は同じ既定のFalseで表現できる。"""
 
         title @= "反復入口における既存束縛と新規束縛の区別"
+        level @= MUST
+
+    class CST_076:
+        """`ValueType.label` は `pyinto.kinds` の語を表す `KindLabel(name, arguments)` を保持できる。`name` は語、`arguments` は正の整数または `ValueType` の列であり、ソースの記述をそのまま記録する。Host はラベルの意味（サイズ、範囲、表現、実行時の振る舞い）を定義せず、検査もしない。ラベルは `ValueType` の等価比較とハッシュに参加せず、型の互換は Python 側の種別と構造だけで決まる。唯一の追加規則として、`Void` / `Nil` / `Null` のラベルを持つ `None` 型の値は、ラベルを持つ宣言型へ代入・束縛できる。`annotation()` はラベルがあればその綴り（例: `Pointer[Int[32]]`）を返す。"""
+
+        title @= "意味を持たないKindラベルの保持"
+        level @= MUST
+
+    class CST_077:
+        """値・比較・ポインタ操作に関わる Kind の語は次の Construct として Model に記録する。`NoneAlias(name)` は `Void` / `Nil` / `Null` の値であり、variant はそれぞれ `void` / `nil` / `null` とする。`NoneAliasComparison(left, operator, right)` は一方が None 別名で他方がラベルを持つ値である `==` / `!=` 比較とする。`AddressOf(target)` は型付き変数の `Reference` から `Pointer[変数の型]` のラベルを持つ値を作り、`PointerLoad(pointer)` は `Pointer[T]` のラベルを持つ値から `T` 型の値を作り、`PointerStore(pointer, value)` は `Pointer[T]` へ `T` に代入可能な値を書き込む文とする。これらは実行上の意味を持たず、Admission の意味義務も持たない。どう実現するかは Target が決める。"""
+
+        title @= "Kindの値・比較・ポインタ操作のConstruct"
+        level @= MUST
+
+    class CST_078:
+        """`ClassDefinition.labels` はクラスに付けられた `@Interface` / `@MixIn` / `@Implements(...)` を、ソース上の記述順に `KindLabel` として保持する。`Implements` の引数は実装先クラスの `InstanceType` を持つ `ValueType` の列とする。同じ語彙の重複は拒否する。ラベルは継承関係・メソッド集合・インスタンス化の可否を変えず、Target へ情報として渡すだけである。"""
+
+        title @= "クラスに付けたKindの記録"
+        level @= MUST
+
+    class CST_079:
+        """動的メモリの語彙は、形と所有を型のラベルで表す。`Buffer[T]` は実行時に長さが決まる `T` の列で、Python 側では `list[T]` の形を持つ。`Owned[X]` と `Shared[X]` は `X` の Python 側の形を保ったまま所有のラベルを付け、`X` には単体の型も `Buffer[T]` も書ける。ラベルのない `Buffer[T]` は所有しない列を表す。Host はこれらの意味（確保の方法、寿命、共有の仕組み）を定義しない。"""
+
+        title @= "動的メモリの形と所有のラベル"
+        level @= MUST
+
+    class CST_080:
+        """動的メモリの操作は次の Construct として記録する。`MemoryNew(element_type, value)` は `Owned[T]`、`MemoryNewBuffer(element_type, length, value)` は `Owned[Buffer[T]]` の値を作る。`MemoryRelease(handle)` は `Owned` / `Shared` の値の寿命の終わりを表す文、`MemoryResize(target, length)` は所有する `Buffer` の変数の長さを変える文、`MemoryLength(handle)` は `Buffer` の長さ、`MemoryBorrow(handle)` は単体なら `Pointer[T]`、列ならラベルのない `Buffer[T]` を返す所有しない参照、`MemoryCopy(destination, source)` と `MemoryFill(handle, value)` は `Buffer` どうしの複写と全要素の設定を表す文とする。`MemoryRelease` と `MemoryBorrow` は対象の型から `single` / `buffer` の variant を持つ。いずれも実行上の意味と Admission の意味義務を持たず、どう実現するかは Target が型のラベルを見て決める。"""
+
+        title @= "動的メモリの操作のConstruct"
+        level @= MUST
+
+    class CST_081:
+        """`pyinto.kinds.datatypes.general` の `Wide[X]` / `Narrow[X]` は `int` / `float` を基準にした相対的な大小を表し、入れ子の深さが段階になる。`Unsigned[X]` は整数の符号なしを表し、常に最も外側に書く。`Size` / `Index` / `Byte` は整数の役割を表す。いずれも Python 側の形は基準の型のままとし、Host は実際の大きさや表現を定義しない。同じ意味に複数の綴りが生じないよう、`Wide` と `Narrow` の混在、`Unsigned` を内側に置く書き方、整数以外への `Unsigned`、基準の型以外への `Wide` / `Narrow` を拒否する。"""
+
+        title @= "汎用のdatatypes：相対的な大小・符号・役割"
         level @= MUST

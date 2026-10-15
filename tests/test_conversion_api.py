@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 
 import pytest
-from demo_ports_pyinto import c_device_bindings, interface_mapping_registry
+from demo_device_pyinto import c_device_bindings, interface_mapping_registry
 
 from pyinto import ConstructError, PythonFrontend, convert, realize
 from pyinto.constructs import Program
@@ -55,14 +55,14 @@ def test_cvt_003_missing_dependencies_and_unregistered_ops_fail() -> None:
     with pytest.raises(
         UnsupportedPython, match="Unregistered interface mapping import"
     ):
-        convert("from demo_ports.device import is_ready", realizations=c_bindings())
+        convert("from demo_device.device import is_ready", realizations=c_bindings())
     with pytest.raises(ConstructError, match="No 'c' realization"):
         convert("print('ok')", realizations=RealizationRegistry("c", ()))
 
 
-def test_cvt_003_explicit_ports_are_handed_to_frontend() -> None:
+def test_cvt_003_explicit_mappings_are_handed_to_frontend() -> None:
     source = (
-        "from demo_ports.device import is_ready\nif is_ready():\n    print('ready')\n"
+        "from demo_device.device import is_ready\nif is_ready():\n    print('ready')\n"
     )
     result = convert(
         source,

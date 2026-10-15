@@ -18,7 +18,7 @@ from pyinto.constructs import (
     Symbol,
 )
 from pyinto.constructs.admission import LANGUAGE_ADMISSION
-from pyinto.constructs.types import PortType, ValueType
+from pyinto.constructs.types import MappedType, ValueType
 from pyinto.realizations.artifacts import TextArtifactSession
 from pyinto.realizations.call_layout import (
     check_direct_call_slots,
@@ -39,30 +39,8 @@ from pyinto.realizations.layout import (
     render as render_layout,
 )
 from pyinto.realizations.regulation import (
-    ACCEPTS,
-    FORBIDDEN_PREFIXES,
-    NAMING,
-    PACK_DISPATCH,
-    PACK_ENTRIES,
-    PACK_RUNTIME,
-    PACK_RUNTIME_SCHEMA,
-    PACK_SEMANTICS,
-    PACK_SESSION,
-    PACK_TARGET,
-    PACK_UNHANDLED,
-    REALIZES,
-    RENDER,
-    REQUIREMENT_LINE,
-    REQUIRES,
-    RESERVED,
-    SEPARATORS,
-    SUPPORTS,
-    TEMPLATE,
-    TYPE_NAME,
-    VARIANT,
-    VISIT,
-    entry_regulation,
-    pack_regulation,
+    read_entry,
+    read_pack,
     realization_target,
 )
 from pyinto.realizations.runtime import RuntimeSchema, is_runtime_schema
@@ -70,8 +48,8 @@ from pyinto.realizations.runtime import RuntimeSchema, is_runtime_schema
 _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 LayoutSelector = Callable[[Construct, "EmitContext"], str | Text | TemplatePlan]
 Visitor = Callable[[Construct, "EmitContext"], None]
-TypeSpeller = Callable[[Symbol | ValueType | PortType], str]
-TypeSelector = Callable[[ValueType | PortType, TypeSpeller], str]
+TypeSpeller = Callable[[Symbol | ValueType | MappedType], str]
+TypeSelector = Callable[[ValueType | MappedType, TypeSpeller], str]
 
 
 @dataclass
@@ -109,6 +87,11 @@ class EmitContext:
     def ancestors(self) -> tuple[Construct, ...]:
         """Root-first ancestors, excluding the currently selected Construct."""
         return self.path[:-1]
+
+    def type_name(self, model_type: Symbol | ValueType | MappedType) -> str:
+        """Spell a type for a callback, recording its declared requirements."""
+        self.headers.update(self.registry.type_requirements(model_type))
+        return self.registry.type_name(model_type)
 
     def fresh(self, stem: str) -> str:
         """Reserve a target-private identifier for a Realization's expansion."""
@@ -166,34 +149,20 @@ class RealizationRegistry:
         cls,
         pack: type[object],
     ) -> RealizationRegistry:
-        result = pack_regulation.validate(pack)
-        if not result.is_valid:
-            raise ValueError(
-                "Invalid Target Pack: "
-                + "; ".join(d.message for d in result.diagnostics)
-            )
-        item = result.view.focused
+        item = read_pack(pack)
         return cls(
-            item.values(PACK_TARGET)[0],
-            item.values(PACK_ENTRIES)[0],
-            dispatch=item.values(PACK_DISPATCH)[0]
-            if item.has(PACK_DISPATCH)
-            else "composition",
-            session_factory=cast(Callable[[], object], item.values(PACK_SESSION)[0])
-            if item.has(PACK_SESSION)
-            else None,
-            semantics=item.values(PACK_SEMANTICS)[0]
-            if item.has(PACK_SEMANTICS)
-            else "preservation",
-            unhandled=item.values(PACK_UNHANDLED)[0]
-            if item.has(PACK_UNHANDLED)
-            else "error",
-            runtime=item.values(PACK_RUNTIME)[0]
-            if item.has(PACK_RUNTIME)
-            else "ignored",
-            runtime_schema=cast(RuntimeSchema, item.values(PACK_RUNTIME_SCHEMA)[0])
-            if item.has(PACK_RUNTIME_SCHEMA)
-            else None,
+            cast(str, item.value("target")),
+            cast(tuple[type[object], ...], item.value("entries")),
+            dispatch=cast(str, item.values.get("dispatch", "composition")),
+            session_factory=cast(
+                Callable[[], object] | None, item.values.get("session")
+            ),
+            semantics=cast(str, item.values.get("semantics", "preservation")),
+            unhandled=cast(str, item.values.get("unhandled", "error")),
+            runtime=cast(str, item.values.get("runtime", "ignored")),
+            runtime_schema=cast(
+                RuntimeSchema | None, item.values.get("runtime_schema")
+            ),
         )
 
     def __init__(
@@ -240,38 +209,29 @@ class RealizationRegistry:
         recipes: dict[tuple[type[Construct], str], _Recipe] = {}
         calls: dict[str, _Recipe] = {}
         spellings: dict[str, str | TypeSelector] = {}
+        type_requires: dict[str, tuple[str, ...]] = {}
         reserved: frozenset[str] = frozenset()
         prefixes: tuple[str, ...] = ()
         requirement_template = "${name}"
         seen_naming = False
         for declaration in declarations:
-            result = entry_regulation.validate(declaration)
-            if not result.is_valid:
-                raise ValueError(
-                    f"Invalid target entry {declaration.__name__}: "
-                    + "; ".join(d.message for d in result.diagnostics)
-                )
-            entry = result.view.focused
+            entry = read_entry(declaration)
             recipe = _Recipe(
-                template=entry.values(TEMPLATE)[0] if entry.has(TEMPLATE) else None,
-                selector=cast(LayoutSelector, entry.values(RENDER)[0])
-                if entry.has(RENDER)
-                else None,
-                visitor=cast(Visitor, entry.values(VISIT)[0])
-                if entry.has(VISIT)
-                else None,
-                accepts=entry.values(ACCEPTS)[0] if entry.has(ACCEPTS) else None,
-                requires=tuple(entry.values(REQUIRES)),
-                supports=frozenset(entry.values(SUPPORTS)[0])
-                if entry.has(SUPPORTS)
-                else frozenset(),
-                separators=MappingProxyType(dict(entry.values(SEPARATORS)[0]))
-                if entry.has(SEPARATORS)
-                else MappingProxyType({}),
+                template=cast(str | None, entry.values.get("template")),
+                selector=cast(LayoutSelector | None, entry.values.get("render")),
+                visitor=cast(Visitor | None, entry.values.get("visit")),
+                accepts=cast(tuple[str, ...] | None, entry.values.get("accepts")),
+                requires=cast(tuple[str, ...], entry.values.get("requires", ())),
+                supports=frozenset(
+                    cast(tuple[str, ...], entry.values.get("supports", ()))
+                ),
+                separators=MappingProxyType(
+                    dict(cast(dict[str, str], entry.values.get("separators", {})))
+                ),
             )
             element_route = (
-                realization_target(entry.values(REALIZES)[0])
-                if entry.has(REALIZES)
+                realization_target(entry.marker("realizes"))
+                if entry.has_marker("realizes")
                 else None
             )
             if (
@@ -289,7 +249,7 @@ class RealizationRegistry:
                 # selected variant from an accidentally omitted declaration.
                 domain = kind.variant_domain()
                 if (
-                    not entry.has(VARIANT)
+                    not entry.has("variant")
                     and domain is not None
                     and "default" not in domain
                 ):
@@ -300,14 +260,14 @@ class RealizationRegistry:
                 if (
                     dispatch == "structural"
                     and semantics == "projection"
-                    and not entry.has(VARIANT)
+                    and not entry.has("variant")
                     and (domain is None or len(domain) > 1)
                 ):
                     raise ValueError(
                         f"{kind.__name__} requires explicit variant in "
                         "structural projection (use '*' for all variants)"
                     )
-                variant = entry.values(VARIANT)[0] if entry.has(VARIANT) else "default"
+                variant = cast(str, entry.values.get("variant", "default"))
                 key = (kind, variant)
                 if key in recipes:
                     raise ValueError(
@@ -323,17 +283,20 @@ class RealizationRegistry:
                 name = cast(str, element_route[1])
                 if name in spellings:
                     raise ValueError(f"Duplicate type spelling {name!r}")
-                spellings[name] = cast(str | TypeSelector, entry.values(TYPE_NAME)[0])
-            elif entry.has(NAMING):
+                spellings[name] = cast(str | TypeSelector, entry.value("type_name"))
+                type_requires[name] = cast(
+                    tuple[str, ...], entry.values.get("requires", ())
+                )
+            elif entry.has_marker("naming"):
                 if seen_naming:
                     raise ValueError("Duplicate naming entry")
                 seen_naming = True
-                if entry.has(RESERVED):
-                    reserved = entry.values(RESERVED)[0]
-                if entry.has(FORBIDDEN_PREFIXES):
-                    prefixes = entry.values(FORBIDDEN_PREFIXES)[0]
-                if entry.has(REQUIREMENT_LINE):
-                    requirement_template = entry.values(REQUIREMENT_LINE)[0]
+                if entry.has("reserved"):
+                    reserved = cast(frozenset[str], entry.value("reserved"))
+                if entry.has("forbidden_prefixes"):
+                    prefixes = cast(tuple[str, ...], entry.value("forbidden_prefixes"))
+                if entry.has("requirement_line"):
+                    requirement_template = cast(str, entry.value("requirement_line"))
         self.target = target_name
         self.dispatch = dispatch
         self.semantics = semantics
@@ -346,6 +309,7 @@ class RealizationRegistry:
         self._recipes = MappingProxyType(recipes)
         self._calls = MappingProxyType(calls)
         self._types = MappingProxyType(spellings)
+        self._type_requires = MappingProxyType(type_requires)
         self._reserved = reserved
         self._prefixes = prefixes
         self._requirement_line = requirement_template
@@ -397,35 +361,66 @@ class RealizationRegistry:
         ctx.headers.update(recipe.requires)
         return recipe
 
-    def type_name(self, model_type: Symbol | ValueType | PortType) -> str:
+    def covers_type(self, key: str) -> bool:
+        """Whether a type spelling is registered for ``integer``, ``kind:Wide`` ..."""
+        return key in self._types
+
+    def covers_construct(self, kind: type[Construct]) -> bool:
+        """Whether any variant (or ``*``) of a Construct type is registered."""
+        return any(registered is kind for registered, _ in self._recipes)
+
+    def type_requirements(
+        self, model_type: Symbol | ValueType | MappedType
+    ) -> frozenset[str]:
+        """Requirement names declared by every type spelling the type uses."""
+        used: set[str] = set()
+        self.type_name(model_type, _used=used)
+        return frozenset(
+            requirement for key in used for requirement in self._type_requires[key]
+        )
+
+    def type_name(
+        self,
+        model_type: Symbol | ValueType | MappedType,
+        *,
+        _used: set[str] | None = None,
+    ) -> str:
         """Spell a complete Model type through this Target's registered rules.
 
         A dynamic spelling receives the concrete shape and a ``spell`` callback
         that re-enters these same rules for nested types. Each top-level request
         owns its own recursion guard, including when a selector fails.
         """
-        active: set[ValueType | PortType] = set()
+        # Keyed by repr so that kind labels (excluded from ValueType
+        # equality) still distinguish Pointer[Int[32]] from Int[32].
+        active: set[str] = set()
 
-        def spell(item: Symbol | ValueType | PortType) -> str:
+        def spell(item: Symbol | ValueType | MappedType) -> str:
             if isinstance(item, Symbol):
                 if item.type is None:
                     raise ConstructError("Callable cannot have a variable type")
                 concrete = item.type
-            elif isinstance(item, (ValueType, PortType)):
+            elif isinstance(item, (ValueType, MappedType)):
                 concrete = item
             else:
                 raise ConstructError("Type representation needs a Model type or Symbol")
-            if concrete in active:
+            identity = repr(concrete)
+            if identity in active:
                 raise ConstructError("Cyclic type spelling for a Model type")
-            key = (
-                concrete.key if isinstance(concrete, PortType) else concrete.kind.value
-            )
+            if isinstance(concrete, MappedType):
+                key = concrete.key
+            elif concrete.label is not None:
+                key = f"kind:{concrete.label.name}"
+            else:
+                key = concrete.kind.value
             spelling = self._types.get(key)
             if spelling is None:
                 raise ConstructError(
                     f"No {self.target!r} type representation for {key!r}"
                 )
-            active.add(concrete)
+            if _used is not None:
+                _used.add(key)
+            active.add(identity)
             try:
                 if callable(spelling):
                     try:
@@ -440,7 +435,7 @@ class RealizationRegistry:
                     raise ConstructError("Type Realization must yield nonempty text")
                 return value
             finally:
-                active.remove(concrete)
+                active.remove(identity)
 
         return spell(model_type)
 
@@ -545,6 +540,19 @@ class Composer:
         finally:
             ctx.path = previous_path
 
+    def _collect_type_requirements(self, model_type: ValueType | MappedType) -> None:
+        """Gather type-spelling requirements while composing.
+
+        Requirements render before the types that need them, so they are
+        collected here. Spelling errors still surface at final rendering,
+        keeping the existing order of reported failures.
+        """
+        try:
+            requirements = self.context.registry.type_requirements(model_type)
+        except ConstructError:
+            return
+        self.context.headers.update(requirements)
+
     def _part(self, part: object, *, separator: str | None = None) -> Layout:
         if separator is not None and not isinstance(part, tuple):
             raise ConstructError("Slot separator requires a tuple Model part")
@@ -564,8 +572,10 @@ class Composer:
         if isinstance(part, Symbol):
             if part.type is None:
                 raise ConstructError("Callable cannot have a variable type")
+            self._collect_type_requirements(part.type)
             return TypeName(part.type)
-        if isinstance(part, (ValueType, PortType)):
+        if isinstance(part, (ValueType, MappedType)):
+            self._collect_type_requirements(part)
             return TypeName(part)
         if isinstance(part, (Text, Name, TypeName, Requirements, Template)):
             return part

@@ -6,8 +6,8 @@ from pyinto.constructs import (
     CallableType,
     ConstructError,
     InstanceType,
+    MappedType,
     ParameterRole,
-    PortType,
     Symbol,
     ValueKind,
     ValueType,
@@ -26,17 +26,17 @@ def test_symbol_owns_one_recursive_value_type() -> None:
     assert symbol.kind is ValueKind.FUNCTION
     assert symbol.callable_type is callback
     assert symbol.tuple_type is None
-    assert symbol.port_type is None
+    assert symbol.mapped_type is None
 
 
-def test_port_and_builtin_symbols_are_not_fabricated_value_types() -> None:
-    port = PortType("unit.memory", "integer", (("minimum", 0),))
-    external = Symbol("memory", port, "unit.memory")
+def test_mapped_and_builtin_symbols_are_not_fabricated_value_types() -> None:
+    mapped = MappedType("unit.memory", "integer")
+    external = Symbol("memory", mapped, "unit.memory")
     built_in = Symbol("print", None)
 
-    assert external.type is port
-    assert external.port_type is port
-    assert external.kind is ValueKind.PORT_OBJECT
+    assert external.type is mapped
+    assert external.mapped_type is mapped
+    assert external.kind is ValueKind.MAPPED_OBJECT
     assert built_in.kind is None
     with pytest.raises(ConstructError, match="no ValueType"):
         _ = external.value_type

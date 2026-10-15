@@ -18,7 +18,7 @@ from pyinto.interfaces import builtins as builtin
 from pyinto.interfaces import language as lang
 from pyinto.model import value_types as vt
 from pyinto.realizations.registry import RealizationRegistry
-from pyinto.realizations.regulation import realizes, template, type_name
+from pyinto.realizations.regulation import realizes
 from tests.support.c_realizer import c_bindings
 
 
@@ -46,17 +46,17 @@ def test_model_value_type_exports_keep_existing_value_kinds() -> None:
     assert vt.Boolean is ValueKind.BOOLEAN
     assert vt.Floating is ValueKind.FLOAT
     assert vt.ValueType(vt.Integer).kind is ValueKind.INTEGER
-    assert vt.PortType.__module__ == "pyinto.constructs.types"
+    assert vt.MappedType.__module__ == "pyinto.constructs.types"
 
 
 def test_public_reexports_can_be_used_with_existing_shikumi_descriptors() -> None:
     @realizes(lang.While)
     class CWhile:
-        template @= "while (${condition}) { ${body} }"
+        template = "while (${condition}) { ${body} }"
 
     @realizes(vt.Integer)
     class CInteger:
-        type_name @= "long long"
+        type_name = "long long"
 
     registry = RealizationRegistry("c-test", (CWhile, CInteger))
     assert (

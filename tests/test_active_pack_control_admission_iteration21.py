@@ -32,7 +32,7 @@ from pyinto.constructs import (
 )
 from pyinto.constructs.admission import required_contracts
 from pyinto.realizations.registry import Composer, RealizationRegistry
-from pyinto.realizations.regulation import realizes, render, supports, variant
+from pyinto.realizations.regulation import realizes
 from tests.support.c_realizer import c_bindings
 from tests.support.python_realizer.pack import python_bindings
 from tests.test_construct_pipeline import run_c
@@ -84,14 +84,14 @@ def test_for_rejects_missing_control_flow_support_before_renderer(
 
     @realizes(For)
     class UncheckedFor:
-        render @= rendering
-        supports @= ("iteration.source.range",)
+        render = rendering
+        supports = ("iteration.source.range",)
 
     @realizes(For)
     class IncompleteElseFor:
-        variant @= "with_else"
-        render @= rendering
-        supports @= ("iteration.source.range", "loop.for.break_continue")
+        variant = "with_else"
+        render = rendering
+        supports = ("iteration.source.range", "loop.for.break_continue")
 
     entries = (UncheckedFor, IncompleteElseFor)
     # Having break/continue support alone still cannot emit a for-else.
@@ -113,7 +113,7 @@ def test_with_rejects_unchecked_context_semantics_before_renderer() -> None:
 
     @realizes(With)
     class UncheckedWith:
-        render @= rendering
+        render = rendering
 
     with pytest.raises(ConstructError, match="context.with.enter_exit_exception"):
         Composer(RealizationRegistry("unsafe", (UncheckedWith,))).source(_with())

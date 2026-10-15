@@ -52,7 +52,7 @@ def _create_packages(path: Path, *, include_target: bool = False) -> None:
             "pyproject.toml",
             "docs/GLOSSARY.md",
             "docs/specification/INDEX.md",
-            "docs/target_implementation/INDEX.md",
+            "docs/realizer/INDEX.md",
             "src/pyinto/__init__.py",
         ):
             data = b"test\n"

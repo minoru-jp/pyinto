@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
 from pyinto.constructs import ConstructError
-from pyinto.constructs.types import PortType, ValueType
+from pyinto.constructs.types import MappedType, ValueType
 
 if TYPE_CHECKING:
     from pyinto.realizations.registry import EmitContext
@@ -72,9 +72,9 @@ class Name:
 
 @dataclass(frozen=True)
 class TypeName:
-    """Unmodified Model value/Port type, serialized only at final rendering."""
+    """Unmodified Model value/mapped type, serialized only at final rendering."""
 
-    value_type: ValueType | PortType
+    value_type: ValueType | MappedType
 
 
 @dataclass(frozen=True)

@@ -21,7 +21,7 @@ from pyinto.constructs import (
 from pyinto.constructs.admission import LANGUAGE_ADMISSION, required_contracts
 from pyinto.frontend import PythonFrontend, UnsupportedPython
 from pyinto.realizations.registry import EmitContext, RealizationRegistry
-from pyinto.realizations.regulation import realizes, supports, template, variant
+from pyinto.realizations.regulation import realizes
 
 
 def _value(source: str) -> object:
@@ -145,9 +145,9 @@ def test_provider_admission_checks_required_contracts_before_render() -> None:
 
     @realizes(Membership)
     class Insufficient:
-        variant @= "list_in"
-        template @= "${element}"
-        supports @= ("membership.list.identity_or_equality",)
+        variant = "list_in"
+        template = "${element}"
+        supports = ("membership.list.identity_or_equality",)
 
     registry = RealizationRegistry("probe", (Insufficient,))
     with pytest.raises(ConstructError, match="membership.operands.left_to_right"):
@@ -155,9 +155,9 @@ def test_provider_admission_checks_required_contracts_before_render() -> None:
 
     @realizes(Membership)
     class Declared:
-        variant @= "list_in"
-        template @= "${element}"
-        supports @= (
+        variant = "list_in"
+        template = "${element}"
+        supports = (
             "membership.list.identity_or_equality",
             "membership.operands.left_to_right",
         )

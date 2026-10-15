@@ -14,28 +14,18 @@ from pyinto.interfaces import language as lang
 from pyinto.realizations import RUNTIME_ABSENT
 from pyinto.realizations.registry import RealizationRegistry
 from pyinto.realizations.regulation import (
-    pack_dispatch,
-    pack_entries,
-    pack_runtime,
-    pack_runtime_schema,
-    pack_semantics,
-    pack_session,
-    pack_target,
-    pack_unhandled,
     realizes,
-    template,
-    visit,
 )
 
 
 @realizes(lang.Program)
 class ProgramVisitor:
-    visit @= lambda node, ctx: ctx.session.events.append("visit")
+    visit = lambda node, ctx: ctx.session.events.append("visit")
 
 
 @realizes(lang.Program)
 class ProgramTemplate:
-    template @= "static"
+    template = "static"
 
 
 class StructuralSession:
@@ -139,21 +129,21 @@ def test_optional_absence_is_distinct_from_none() -> None:
 
 def test_pack_policy_declaration_and_default() -> None:
     class RuntimePack:
-        pack_target @= "structural-result"
-        pack_dispatch @= "structural"
-        pack_semantics @= "projection"
-        pack_unhandled @= "traverse"
-        pack_entries @= (ProgramVisitor,)
-        pack_session @= StructuralSession
-        pack_runtime @= "required"
+        target = "structural-result"
+        dispatch = "structural"
+        semantics = "projection"
+        unhandled = "traverse"
+        entries = (ProgramVisitor,)
+        session = StructuralSession
+        runtime = "required"
 
     class LegacyPack:
-        pack_target @= "legacy"
-        pack_dispatch @= "structural"
-        pack_semantics @= "projection"
-        pack_unhandled @= "traverse"
-        pack_entries @= (ProgramVisitor,)
-        pack_session @= StaticSession
+        target = "legacy"
+        dispatch = "structural"
+        semantics = "projection"
+        unhandled = "traverse"
+        entries = (ProgramVisitor,)
+        session = StaticSession
 
     assert RealizationRegistry.from_pack(RuntimePack).runtime == "required"
     assert RealizationRegistry.from_pack(LegacyPack).runtime == "ignored"
@@ -161,9 +151,9 @@ def test_pack_policy_declaration_and_default() -> None:
         registry("invalid")
 
     class InvalidPack:
-        pack_target @= "bad"
-        pack_entries @= ()
-        pack_runtime @= "unknown"
+        target = "bad"
+        entries = ()
+        runtime = "unknown"
 
     with pytest.raises(ValueError, match="Invalid Target runtime policy"):
         RealizationRegistry.from_pack(InvalidPack)
@@ -171,9 +161,9 @@ def test_pack_policy_declaration_and_default() -> None:
 
 def test_runtime_pack_requires_explicit_compatible_session() -> None:
     class NoSessionPack:
-        pack_target @= "bad"
-        pack_entries @= (ProgramTemplate,)
-        pack_runtime @= "required"
+        target = "bad"
+        entries = (ProgramTemplate,)
+        runtime = "required"
 
     with pytest.raises(
         ValueError, match="Runtime-enabled Target needs an artifact session"
@@ -206,10 +196,8 @@ def __pyinto_runtime__():
 
     @realizes(lang.Program)
     class CheckVisitor:
-        def callback(node: object, ctx: object) -> None:
+        def visit(node: object, ctx: object) -> None:
             assert not marker.exists()
-
-        visit @= callback
 
     class ResultSession:
         def finish(self, result: object) -> object:
@@ -342,14 +330,14 @@ def __pyinto_runtime__() -> UnknownType:
 
 def test_runtime_schema_type_from_pack_and_direct_registry() -> None:
     class TypedPack:
-        pack_target @= "schema-type"
-        pack_dispatch @= "structural"
-        pack_semantics @= "projection"
-        pack_unhandled @= "traverse"
-        pack_entries @= (ProgramVisitor,)
-        pack_session @= StructuralSession
-        pack_runtime @= "required"
-        pack_runtime_schema @= dict
+        target = "schema-type"
+        dispatch = "structural"
+        semantics = "projection"
+        unhandled = "traverse"
+        entries = (ProgramVisitor,)
+        session = StructuralSession
+        runtime = "required"
+        runtime_schema = dict
 
     selected = RealizationRegistry.from_pack(TypedPack)
     assert selected.runtime_schema is dict
@@ -403,14 +391,14 @@ def test_schema_validator_checks_nested_values_and_preserves_identity() -> None:
         )
 
     class PredicatePack:
-        pack_target @= "schema-predicate"
-        pack_dispatch @= "structural"
-        pack_semantics @= "projection"
-        pack_unhandled @= "traverse"
-        pack_entries @= (ProgramVisitor,)
-        pack_session @= StructuralSession
-        pack_runtime @= "required"
-        pack_runtime_schema @= validate_trace
+        target = "schema-predicate"
+        dispatch = "structural"
+        semantics = "projection"
+        unhandled = "traverse"
+        entries = (ProgramVisitor,)
+        session = StructuralSession
+        runtime = "required"
+        runtime_schema = validate_trace
 
     selected = RealizationRegistry.from_pack(PredicatePack)
     assert selected.runtime_schema is validate_trace
@@ -490,12 +478,12 @@ def test_schema_checks_hook_returning_none_but_not_optional_absence() -> None:
 @pytest.mark.parametrize("invalid", [42, "dict", list[int], dict[str, int], int | str])
 def test_reject_invalid_runtime_schema_declarations(invalid: object) -> None:
     class InvalidSchemaPack:
-        pack_target @= "invalid-schema"
-        pack_dispatch @= "structural"
-        pack_entries @= (ProgramVisitor,)
-        pack_session @= StructuralSession
-        pack_runtime @= "required"
-        pack_runtime_schema @= invalid
+        target = "invalid-schema"
+        dispatch = "structural"
+        entries = (ProgramVisitor,)
+        session = StructuralSession
+        runtime = "required"
+        runtime_schema = invalid
 
     with pytest.raises(ValueError, match="Runtime schema must be a type or a callable"):
         RealizationRegistry.from_pack(InvalidSchemaPack)
@@ -513,12 +501,12 @@ def test_reject_invalid_runtime_schema_declarations(invalid: object) -> None:
 @pytest.mark.parametrize("policy", ["ignored", "forbidden"])
 def test_runtime_schema_rejected_for_non_consuming_policies(policy: str) -> None:
     class InvalidPolicySchemaPack:
-        pack_target @= "schema-policy"
-        pack_dispatch @= "structural"
-        pack_entries @= (ProgramVisitor,)
-        pack_session @= StructuralSession
-        pack_runtime @= policy
-        pack_runtime_schema @= dict
+        target = "schema-policy"
+        dispatch = "structural"
+        entries = (ProgramVisitor,)
+        session = StructuralSession
+        runtime = policy
+        runtime_schema = dict
 
     with pytest.raises(ValueError, match="schema needs required or optional"):
         RealizationRegistry.from_pack(InvalidPolicySchemaPack)

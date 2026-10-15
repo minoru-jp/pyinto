@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pyinto.constructs as model
 from pyinto.admission import (
     AdmissionDeclaration,
@@ -41,6 +43,7 @@ from pyinto.constructs import (
     With,
 )
 from pyinto.constructs.control import iteration_source_shape
+from pyinto.constructs.kinds import involves_kind_label
 
 
 def _bound_arguments(node: Construct) -> frozenset[str]:
@@ -496,8 +499,27 @@ ADMISSION_RULES: tuple[AdmissionRule, ...] = (
 
 # Provider-owned explicit inventory. A new Language Construct must be reviewed here
 # and in the independent canonical audit, even if it has no admission keys.
+def _without_kind_labels(rule: AdmissionRule) -> AdmissionRule:
+    """Python-semantics obligations do not apply to kind-labeled operations.
+
+    The Host does not know what a kind does on the Target side, so it
+    cannot ask a Target to preserve Python behavior for it (CMP_033).
+    """
+    original = rule.resolve
+
+    def resolve(node: Construct) -> frozenset[str]:
+        if involves_kind_label(node):
+            return frozenset()
+        return original(node)
+
+    return replace(rule, resolve=resolve)
+
+
+ADMISSION_RULES = tuple(_without_kind_labels(rule) for rule in ADMISSION_RULES)
+
 LANGUAGE_CONSTRUCT_NAMES: tuple[str, ...] = (
     "Absolute",
+    "AddressOf",
     "Arithmetic",
     "Assign",
     "AugAssign",
@@ -539,11 +561,11 @@ LANGUAGE_CONSTRUCT_NAMES: tuple[str, ...] = (
     "FunctionDefinition",
     "FunctionValueCall",
     "Initialize",
-    "IntrinsicCall",
     "InstanceCreation",
     "IntegerSum",
     "IntegerTrueDivision",
     "IntegerUnary",
+    "IntrinsicCall",
     "IterationEntry",
     "LambdaValue",
     "Length",
@@ -551,11 +573,23 @@ LANGUAGE_CONSTRUCT_NAMES: tuple[str, ...] = (
     "ListElementAssign",
     "ListValue",
     "Literal",
-    "MethodCall",
     "Membership",
+    "MemoryBorrow",
+    "MemoryCopy",
+    "MemoryFill",
+    "MemoryLength",
+    "MemoryNew",
+    "MemoryNewBuffer",
+    "MemoryRelease",
+    "MemoryResize",
+    "MethodCall",
+    "NoneAlias",
+    "NoneAliasComparison",
     "NoneLiteral",
     "Parameter",
     "Pass",
+    "PointerLoad",
+    "PointerStore",
     "PrintValues",
     "Program",
     "Raise",

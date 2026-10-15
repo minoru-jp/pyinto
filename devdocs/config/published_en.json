@@ -3,92 +3,92 @@
   "entries": {
     "README.md": {
       "published": "README.md",
-      "canonical_sha256": "eb4f97f9aeaf97fb63f85382c4bc4f83e8f09313d414424112d436af615c37de",
-      "english_sha256": "0f7e882bcded420f9f07a6bbc42d7090059b69269bf972a900d868c3b52ad99a",
+      "canonical_sha256": "b2992a1c19aea2f619c46cd9f2f9c33a425602265415ede25d24405a86b65f02",
+      "english_sha256": "3769ee695500a5af110bf94f113484cf090d9a543f1430fba228340478d9f691",
       "coverage": "translated"
     },
     "STATUS.md": {
       "published": "STATUS.md",
-      "canonical_sha256": "118dd132ad9427ee5440a158f11a89aba1677072c7d548e7a43850e2c6fd0583",
-      "english_sha256": "77758523f200ec604c4d68583ed9683744bcdbfd728adf732fa4186a6ccb4afd",
+      "canonical_sha256": "d3a2b5cfb3f9a6905b78a2676450781b23e97a2122bf69060f976076848cadd0",
+      "english_sha256": "a099222f68cff8245074f027ca5931fbbf97cff3c87d7c77e0181ab4d2413896",
       "coverage": "translated"
     },
     "CHANGELOG.md": {
       "published": "CHANGELOG.md",
-      "canonical_sha256": "abf2cc134ad8a6174592e5bc04a6304aee914b6d39866a6bc2ea820756ae5cd7",
-      "english_sha256": "7cf3f2659b23a442fbae5aca9bb5e41b5a43b3dce77f79fc50ec2cd933201753",
+      "canonical_sha256": "8d1bd1573e8c6531d30251be53ed6fa8d5ee0e0fd2406f2ba9c329b41e41ee2f",
+      "english_sha256": "64fd89ac9e8786f476bb02fd2375144d70f79284156dc790856a0ac7c21cf8f2",
       "coverage": "translated"
     },
     "GLOSSARY.md": {
       "published": "docs/GLOSSARY.md",
-      "canonical_sha256": "c7d70fa1c961b41b06b03e6339227e95b2a90bb176496d54f2f9b467e9c8f200",
-      "english_sha256": "9ea95d36aa01940c2c48f6597b8c2d418353c4178c4b62544cc5d66ce3cdd827",
+      "canonical_sha256": "6facec6047883989e8c567d551e63fe131fdf3eb3b8abe6d651ccb98ea3d67f1",
+      "english_sha256": "d267fec34d8a759176c15a303629af6f4f1c28956bbebe6b467dd2baa68e859f",
       "coverage": "translated"
     },
     "specification/INDEX.md": {
       "published": "docs/specification/INDEX.md",
-      "canonical_sha256": "735b9c77b486888dd0bd145fd19b2e2d127e726e1ee8bc9cd8a962bef64a83d0",
+      "canonical_sha256": "d4a76f7242df10b4510f806daa796540fc7a399f0fc2114f247b1a7707361b9b",
       "english_sha256": "77872a4265680c696eec705f676674afe1fe87d860e2eb96213fb07797c35f58",
       "coverage": "translated"
     },
     "specification/construct.md": {
       "published": "docs/specification/construct.md",
-      "canonical_sha256": "53dfdf9f5da9ed17dbf838f9acb16f499e628c1a24f64129ea16698712249eb8",
-      "english_sha256": "d1a8d0445cf39dc412a0a936ccc13b6ebcdfdc43e475f6caad69ab09ce436768",
+      "canonical_sha256": "bfd6225bf081db609aa890e3ee79bf62e9fb203b54632a1c2635eb3e392305f0",
+      "english_sha256": "e0af410222c7619307f86abc17ae648b961f59b30b2f7c4268f3ec8b26f60bf2",
       "coverage": "translated"
     },
     "specification/frontend.md": {
       "published": "docs/specification/frontend.md",
-      "canonical_sha256": "83631870d59cf926c380017f79c8b8765d9a04e311863ce568886614cd905876",
-      "english_sha256": "84bca3ac7e63db40762b0b767e6a94dbc72d3e7f503f3b1aa7e503cf6b6a7c16",
+      "canonical_sha256": "7f2975debafb198d77248534fbbab1898f72bbb4f0fc264a032e24114e868f1d",
+      "english_sha256": "004c0f94090b078e2820d1a0593e875e77063e3e713f2ff7e0998fb63de1590e",
       "coverage": "translated"
     },
     "specification/composition.md": {
       "published": "docs/specification/composition.md",
-      "canonical_sha256": "c55f8ec08ed6d5938cdd40ad735f35c6b90f0753eea2e5d9a9edec3a2c5826f9",
-      "english_sha256": "81ba117f738faf9045c6a9d51bc832004625412fa16d7247713c3573ac3d8a0b",
+      "canonical_sha256": "be1b33ee49d74834d5058fd0929737e7186fce1b5c91145f7e6a774f198a9792",
+      "english_sha256": "d3c8e35324db2578863f0f5fe9cd39fe352dfe336f1b0c9f8bb023799547be89",
       "coverage": "translated"
     },
     "specification/conversion.md": {
       "published": "docs/specification/conversion.md",
-      "canonical_sha256": "2f2bef2cacac62363a161f50f44a4317f3030e9705eb8fbe9186bad94bda3754",
-      "english_sha256": "9d6abe072c3e0145f36a2e4b1423962aadba07264022646ac800ea98edd04a76",
+      "canonical_sha256": "b2880c82ef50dfd92557cf9675a4754c78db67eb3835862cac926da97c0ec2e5",
+      "english_sha256": "b8fd83f247be5b7f45fa5942d7bb1e0108c89828a9d0e864ec0f2c72b5aa2359",
       "coverage": "translated"
     },
-    "target_implementation/INDEX.md": {
-      "published": "docs/target_implementation/INDEX.md",
-      "canonical_sha256": "0bed4ba167aa6671317c897f861ae63c28b880a2d8094c7d4c5494e10b2d2988",
-      "english_sha256": "58398b1eec73f89efbc342b4eb2bfae1e9932319857be80a6e462ff6f0aa8945",
+    "realizer/INDEX.md": {
+      "published": "docs/realizer/INDEX.md",
+      "canonical_sha256": "d24a6f981fcc70600332b2304ce2e9aa02a7f14de0dfe8db76a9ad45f0d45eed",
+      "english_sha256": "449f36d65e50d1e2d15eb57bfafceec602cbfa576db4a1dbfc13e8e1464078e1",
       "coverage": "translated"
     },
-    "target_implementation/implementation-guide.md": {
-      "published": "docs/target_implementation/implementation-guide.md",
-      "canonical_sha256": "17afdd8e1472e49850efcb80f2bc9f5573098c2f39626114929a57b4ff37240d",
-      "english_sha256": "e758e54a1eaa7141a5dd44be85b82cdcde60db42cd569dbd0eee22600ec42050",
+    "realizer/implementation-guide.md": {
+      "published": "docs/realizer/implementation-guide.md",
+      "canonical_sha256": "f3221f246fdf89e476bad7201d0924eed631a300d012168e523dd0de658ee0b9",
+      "english_sha256": "2e98e7220490ff261f4d346bbb06da7de4e7e0a4e7c163fe38ddb215893b315f",
       "coverage": "translated"
     },
-    "target_implementation/declaration-reference.md": {
-      "published": "docs/target_implementation/declaration-reference.md",
-      "canonical_sha256": "48876ff7b05c3e056b83df3903553d4c9467fde2057e878f1b4739714d11cb82",
-      "english_sha256": "e74d5f1b3f0edeb00c7670f8634c59e32806cea5a89c68de1ba8ba0cb15a22b3",
+    "realizer/declaration-reference.md": {
+      "published": "docs/realizer/declaration-reference.md",
+      "canonical_sha256": "6fc0d8b0e156106ae4940c2d3e552a15e3a88dfb2092b3c4ddff604ef484a7c0",
+      "english_sha256": "53f190a583475191308ec48cb01887c6fd64f9316f10e9e95038e70c40949b6e",
       "coverage": "translated"
     },
-    "target_implementation/construct-reference.md": {
-      "published": "docs/target_implementation/construct-reference.md",
-      "canonical_sha256": "8754a557f6431883c35edaaf0129c5aa654e30113e11266b902f222d28b87f63",
-      "english_sha256": "0278acbb4f7d45fba136ac72de113c6750beb3d7b271ef1b910353cc02672878",
+    "realizer/construct-reference.md": {
+      "published": "docs/realizer/construct-reference.md",
+      "canonical_sha256": "b106c433e56ae8aabcbfe61fd0fd19a6ebf4a12ee585fcf9a68328a3efabd3a9",
+      "english_sha256": "2c735a4411dfbd2a558a87f8177eddedad2efccdd996b394bd60aee3075be521",
       "coverage": "translated"
     },
-    "target_implementation/admission-reference.md": {
-      "published": "docs/target_implementation/admission-reference.md",
-      "canonical_sha256": "2a79f8d49c29828cf7691c577d94c924ecdf0c2bbcf084784ffad0675070d02f",
-      "english_sha256": "a3852486a5280254b9b2236fc4fe8fb06ebc5c9dd7e0ac5faca085f6228fed10",
+    "realizer/admission-reference.md": {
+      "published": "docs/realizer/admission-reference.md",
+      "canonical_sha256": "d91acb3d065be3ffba8ea292df304e718409bf37f734f45c6d7be28294074006",
+      "english_sha256": "f04379ce9cfb13b15e7e6ee918149efcc08fe9a0bf8b18fa4b5905097a7072b8",
       "coverage": "translated"
     },
-    "target_implementation/verification-guide.md": {
-      "published": "docs/target_implementation/verification-guide.md",
-      "canonical_sha256": "6363cd186926db69455def09c81b3e92ef09683701e51a9f247699c425e8c3c1",
-      "english_sha256": "4f930c3c376f5ffa5e32da3e9c317b9fd867420600a0a8f6fb80bfd1e2eec5f5",
+    "realizer/verification-guide.md": {
+      "published": "docs/realizer/verification-guide.md",
+      "canonical_sha256": "bf43a662d5abbcf686c8ddfa1784b3f15a6354f149917b15fb00ac9710437b2f",
+      "english_sha256": "252832970701521f7fbbbef4fc93707deb1a99e89f79ede179e491a6952a4236",
       "coverage": "translated"
     }
   }

@@ -1,7 +1,7 @@
-"""Shikumi declarations for Python Source API -> Model function mappings.
+"""Class declarations for Python Source API -> Model function mappings.
 
 A parent ``@maps(function)`` owns one or more nested ``@signature(...)``
-classes; each signature declares its Model factory with ``factory @= ...``.
+classes; each signature declares its Model factory with ``factory = ...``.
 Declarations are reduced to the existing immutable InterfaceFunctionMapping data,
 so call binding, overload resolution and fail-closed behavior stay centralized.
 """
@@ -11,18 +11,9 @@ from __future__ import annotations
 import inspect
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass
-from typing import cast
+from typing import TypeVar, cast
 
-from shikumi import (
-    Diagnostic,
-    InformationType,
-    SemanticView,
-    Shikumi,
-    StructuralKind,
-    validator,
-)
-from shikumi.standard import assignment, decorator, information_type_rule
-
+from pyinto._declaration import Declaration, Field, marker, require
 from pyinto.constructs import Value, ValueKind
 from pyinto.interface_mapping.registry import (
     InterfaceFunctionMapping,
@@ -38,18 +29,22 @@ class _Signature:
     variadic: InterfaceVariadicParameter | None
 
 
-MAP_SOURCE = InformationType("interface.mapping.source", object)
-SIGNATURE = InformationType("interface.mapping.signature", _Signature)
-FACTORY = InformationType("interface.mapping.factory", object)
+C = TypeVar("C", bound=type)
 
-maps = decorator(MAP_SOURCE)
-factory = assignment(FACTORY)
+_PARENT_FIELDS: dict[str, Field] = {}
+_SIGNATURE_FIELDS: dict[str, Field] = {"factory": Field()}
+_MARKERS = ("maps", "signature")
+
+
+def maps(function: object) -> Callable[[C], C]:
+    """Declare the class as the mapping parent for one Python function."""
+    return marker("maps", function)
 
 
 def signature(
     *parameters: InterfaceParameter | ValueKind,
     variadic: InterfaceVariadicParameter | None = None,
-) -> Callable[[type[object]], type[object]]:
+) -> Callable[[C], C]:
     """Declare a named or positional-only signature, with optional ``*args``.
 
     ``@signature(InterfaceParameter(...), ...)`` declares named parameters and
@@ -67,7 +62,7 @@ def signature(
         entry = _Signature(None, cast(tuple[ValueKind, ...], parameters), variadic)
     else:
         raise TypeError("signature requires only InterfaceParameter or only ValueKind")
-    return decorator(SIGNATURE)(entry)
+    return marker("signature", entry)
 
 
 def _source_name(source: object) -> str:
@@ -93,53 +88,30 @@ def _source_name(source: object) -> str:
     return f"{module}.{name}"
 
 
-@validator(focus=StructuralKind.ENTITY, name="interface.mapping.declaration")
-def _validate_declaration(view: SemanticView) -> Iterator[Diagnostic]:
-    item = view.focused
-    parent = item.has(MAP_SOURCE)
-    child = item.has(SIGNATURE)
+def _validate_declaration(item: Declaration) -> Iterator[str]:
+    parent = item.has_marker("maps")
+    child = item.has_marker("signature")
     if parent == child:
-        yield Diagnostic(
-            "Mapping entry must declare exactly one of maps or signature",
-            code="interface.mapping.role",
-        )
+        yield "Mapping entry must declare exactly one of maps or signature"
         return
     if parent:
-        if item.has(FACTORY):
-            yield Diagnostic(
-                "maps parent cannot declare factory", code="interface.mapping.factory"
-            )
         try:
-            _source_name(item.values(MAP_SOURCE)[0])
+            _source_name(item.marker("maps"))
         except (TypeError, ValueError) as exc:
-            yield Diagnostic(str(exc), code="interface.mapping.source")
-    else:
-        if not item.has(FACTORY) or not callable(item.values(FACTORY)[0]):
-            yield Diagnostic(
-                "signature requires a callable factory",
-                code="interface.mapping.factory",
-            )
+            yield str(exc)
+    elif not item.has("factory") or not callable(item.value("factory")):
+        yield "signature requires a callable factory"
 
 
-mapping_regulation = Shikumi(
-    information_types=(MAP_SOURCE, SIGNATURE, FACTORY),
-    validators=(
-        information_type_rule(MAP_SOURCE),
-        information_type_rule(SIGNATURE),
-        information_type_rule(FACTORY),
+def _validated_item(declaration: type[object], *, parent: bool) -> Declaration:
+    return require(
+        declaration,
         _validate_declaration,
-    ),
-)
-
-
-def _validated_item(declaration: type[object]) -> SemanticView:
-    result = mapping_regulation.validate(declaration)
-    if not result.is_valid:
-        raise ValueError(
-            f"Invalid interface mapping declaration {declaration.__qualname__}: "
-            + "; ".join(d.message for d in result.diagnostics)
-        )
-    return result.view
+        fields=_PARENT_FIELDS if parent else _SIGNATURE_FIELDS,
+        markers=_MARKERS,
+        allow_nested=parent,
+        label="Invalid interface mapping declaration",
+    )
 
 
 def function_declarations(parent: type[object]) -> tuple[InterfaceFunctionMapping, ...]:
@@ -150,10 +122,10 @@ def function_declarations(parent: type[object]) -> tuple[InterfaceFunctionMappin
     """
     if not isinstance(parent, type):
         raise TypeError("Interface mapping declaration must be a class")
-    outer = _validated_item(parent).focused
-    if not outer.has(MAP_SOURCE):
+    outer = _validated_item(parent, parent=True)
+    if not outer.has_marker("maps"):
         raise ValueError("Interface mapping parent requires @maps")
-    source = _source_name(outer.values(MAP_SOURCE)[0])
+    source = _source_name(outer.marker("maps"))
     children: list[type[object]] = []
     prefix = parent.__qualname__ + "."
     for name, item in vars(parent).items():
@@ -167,15 +139,15 @@ def function_declarations(parent: type[object]) -> tuple[InterfaceFunctionMappin
         raise ValueError("@maps requires at least one nested @signature class")
     definitions: list[InterfaceFunctionMapping] = []
     for child in children:
-        inner = _validated_item(child).focused
-        if not inner.has(SIGNATURE):
+        inner = _validated_item(child, parent=False)
+        if not inner.has_marker("signature"):
             raise ValueError("Nested mapping class requires @signature")
-        sig = inner.values(SIGNATURE)[0]
+        sig = cast(_Signature, inner.marker("signature"))
         definitions.append(
             InterfaceFunctionMapping(
                 source,
                 sig.positional_kinds,
-                cast(Callable[[tuple[Value, ...]], Value], inner.values(FACTORY)[0]),
+                cast(Callable[[tuple[Value, ...]], Value], inner.value("factory")),
                 parameters=sig.parameters,
                 variadic=sig.variadic,
             )

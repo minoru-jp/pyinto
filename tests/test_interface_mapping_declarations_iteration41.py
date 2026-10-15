@@ -1,4 +1,4 @@
-"""Shikumi maps/signature declarations preserve existing mapping behavior."""
+"""maps/signature class declarations preserve existing mapping behavior."""
 
 from __future__ import annotations
 
@@ -13,7 +13,6 @@ from pyinto.interface_mapping import (
     InterfaceMappingRegistry,
     InterfaceParameter,
     InterfaceVariadicParameter,
-    factory,
     maps,
     signature,
 )
@@ -47,26 +46,26 @@ class ComputeMappings:
         variadic=InterfaceVariadicParameter("more", ValueKind.INTEGER),
     )
     class Integers:
-        factory @= integer_factory
+        factory = integer_factory
 
     @signature(InterfaceParameter("value", ValueKind.STRING))
     class String:
-        factory @= string_factory
+        factory = string_factory
 
 
 @maps(math.sqrt)
 class SqrtMappings:
     @signature(InterfaceParameter("value", ValueKind.FLOAT))
     class Floating:
-        factory @= lambda args: args[0]
+        factory = lambda args: args[0]
 
 
-def test_public_shikumi_names_are_exports():
+def test_public_declaration_decorators_are_exports():
     from pyinto import interface_mapping
 
     assert interface_mapping.maps is maps
     assert interface_mapping.signature is signature
-    assert interface_mapping.factory is factory
+    assert not hasattr(interface_mapping, "factory")
 
 
 def test_nested_declarations_materialize_into_existing_function_entries():
@@ -104,13 +103,13 @@ def test_named_default_and_positional_only_variants():
             InterfaceParameter("base", ValueKind.INTEGER, Literal(8)),
         )
         class Named:
-            factory @= integer_factory
+            factory = integer_factory
 
     @maps(math.floor)
     class Positional:
         @signature(ValueKind.FLOAT)
         class Float:
-            factory @= lambda values: Literal(3)
+            factory = lambda values: Literal(3)
 
     registry = InterfaceMappingRegistry.from_declarations((Defaults, Positional))
     captured.clear()
@@ -143,11 +142,11 @@ def test_duplicate_nested_signatures_rejected_by_existing_registry():
     class Duplicates:
         @signature(ValueKind.INTEGER)
         class One:
-            factory @= integer_factory
+            factory = integer_factory
 
         @signature(ValueKind.INTEGER)
         class Two:
-            factory @= string_factory
+            factory = string_factory
 
     with pytest.raises(ValueError, match="Duplicate interface mapping signature"):
         InterfaceMappingRegistry.from_declarations((Duplicates,))
@@ -158,11 +157,11 @@ def test_matching_signatures_ambiguity_still_fails_closed():
     class Ambiguous:
         @signature(InterfaceParameter("value", ValueKind.INTEGER))
         class Named:
-            factory @= integer_factory
+            factory = integer_factory
 
         @signature(ValueKind.INTEGER)
         class Positional:
-            factory @= integer_factory
+            factory = integer_factory
 
     registry = InterfaceMappingRegistry.from_declarations((Ambiguous,))
     with pytest.raises(UnsupportedPython, match="Ambiguous"):
@@ -184,7 +183,7 @@ def test_reject_missing_signature():
     @maps(compute)
     class Bad:
         class Child:
-            factory @= integer_factory
+            factory = integer_factory
 
     with pytest.raises(ValueError, match="signature"):
         InterfaceMappingRegistry.from_declarations((Bad,))
@@ -201,7 +200,7 @@ def test_reject_missing_factory_and_noncallable_factory():
     class BadFactory:
         @signature(ValueKind.INTEGER)
         class Child:
-            factory @= 123
+            factory = 123
 
     for parent in (BadMissing, BadFactory):
         with pytest.raises(ValueError, match="callable factory"):
@@ -211,18 +210,18 @@ def test_reject_missing_factory_and_noncallable_factory():
 def test_reject_factory_on_parent_and_source_on_child():
     @maps(compute)
     class BadParent:
-        factory @= integer_factory
+        factory = integer_factory
 
         @signature(ValueKind.INTEGER)
         class One:
-            factory @= integer_factory
+            factory = integer_factory
 
     @maps(compute)
     class BadChild:
         @maps(compute)
         @signature(ValueKind.INTEGER)
         class One:
-            factory @= integer_factory
+            factory = integer_factory
 
     for parent in (BadParent, BadChild):
         with pytest.raises(ValueError):
@@ -232,7 +231,7 @@ def test_reject_factory_on_parent_and_source_on_child():
 def test_reject_class_alias_instead_of_directly_nested_signature():
     @signature(ValueKind.INTEGER)
     class Different:
-        factory @= integer_factory
+        factory = integer_factory
 
     @maps(compute)
     class Bad:
@@ -256,7 +255,7 @@ def test_invalid_external_source_avoids_ambiguous_python_function_identity():
         class Bad:
             @signature(ValueKind.INTEGER)
             class Entry:
-                factory @= integer_factory
+                factory = integer_factory
 
         with pytest.raises(ValueError, match="maps requires"):
             InterfaceMappingRegistry.from_declarations((Bad,))
@@ -279,7 +278,18 @@ def test_invalid_signature_parameter_names_and_defaults_reuse_old_validation():
     class Invalid:
         @signature(InterfaceParameter("for", ValueKind.INTEGER))
         class Bad:
-            factory @= integer_factory
+            factory = integer_factory
 
     with pytest.raises(ValueError, match="Invalid or duplicate"):
         InterfaceMappingRegistry.from_declarations((Invalid,))
+
+
+def test_misspelled_factory_is_rejected_instead_of_ignored():
+    @maps(compute)
+    class Misspelled:
+        @signature(ValueKind.INTEGER)
+        class Child:
+            factroy = integer_factory
+
+    with pytest.raises(ValueError, match="unknown declaration 'factroy'"):
+        InterfaceMappingRegistry.from_declarations((Misspelled,))

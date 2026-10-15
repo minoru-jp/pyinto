@@ -30,7 +30,8 @@ class TupleValue(Value):
         if any(not isinstance(item, Value) for item in self.items):
             raise ConstructError("Tuple items must be Values")
         if any(
-            item.kind in {ValueKind.PORT_OBJECT, ValueKind.NONE} for item in self.items
+            item.kind in {ValueKind.MAPPED_OBJECT, ValueKind.NONE}
+            for item in self.items
         ):
             raise ConstructError("Tuple items require supported value types")
 

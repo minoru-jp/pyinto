@@ -23,7 +23,7 @@ from pyinto.constructs import (
 from pyinto.constructs.admission import LANGUAGE_ADMISSION
 from pyinto.realizations.layout import TemplatePlan
 from pyinto.realizations.registry import Composer, RealizationRegistry
-from pyinto.realizations.regulation import realizes, render, variant
+from pyinto.realizations.regulation import realizes
 from tests.support.c_realizer import c_bindings
 from tests.support.python_realizer.pack import python_bindings
 from tests.test_construct_pipeline import run_c
@@ -105,15 +105,15 @@ class _Example(Construct):
 
 @realizes(_Example)
 class _ExampleRule:
-    render @= lambda node, ctx: TemplatePlan(
+    render = lambda node, ctx: TemplatePlan(
         "${prefix}-${body}-${prefix}", {"prefix": Literal(3)}
     )
 
 
 @realizes(Literal)
 class _LiteralRule:
-    variant @= "integer"
-    render @= lambda node, ctx: str(node.value)
+    variant = "integer"
+    render = lambda node, ctx: str(node.value)
 
 
 def test_cmp_010_realization_slots_are_recursive_and_reused() -> None:
@@ -142,7 +142,7 @@ def test_cmp_010_invalid_realization_slot_mapping_rejected(
 
     @realizes(_Example)
     class Rule:
-        render @= select
+        render = select
 
     with pytest.raises(ConstructError, match=message):
         Composer(
@@ -154,7 +154,7 @@ def test_cmp_010_invalid_realization_slot_mapping_rejected(
 def test_cmp_010_composer_owned_requirements_cannot_be_replaced() -> None:
     @realizes(Program)
     class BadProgram:
-        render @= lambda node, ctx: TemplatePlan(
+        render = lambda node, ctx: TemplatePlan(
             "${requirements}", {"requirements": Literal(123)}
         )
 

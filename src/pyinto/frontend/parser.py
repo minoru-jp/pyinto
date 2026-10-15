@@ -146,6 +146,7 @@ class PythonFrontend:
                 self._context.names.callable_aliases,
                 self._context.names.interface_aliases,
                 self._interface_mappings,
+                self._context.names.kind_aliases,
             ),
         )
 
@@ -156,6 +157,12 @@ class PythonFrontend:
 
     def _value(self, node: ast.expr, expected: ValueType | None = None) -> Value:
         return self._expressions._value(node, expected)
+
+    def _pointer_store(self, node: ast.Call) -> Construct:
+        return self._expressions.pointer_store(node)
+
+    def _memory_statement(self, node: ast.Call, operation: str) -> Construct:
+        return self._expressions.memory_statement(node, operation)
 
     def _instance_receiver(self, node: ast.expr) -> Value | None:
         return self._expressions._instance_receiver(node)

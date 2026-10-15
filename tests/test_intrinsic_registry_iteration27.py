@@ -23,7 +23,7 @@ from pyinto.constructs.admission import LANGUAGE_ADMISSION, required_contracts
 from pyinto.frontend import PythonFrontend, UnsupportedPython
 from pyinto.intrinsics import IntrinsicRegistry
 from pyinto.realizations.registry import EmitContext, RealizationRegistry
-from pyinto.realizations.regulation import realizes, render, supports, template, variant
+from pyinto.realizations.regulation import realizes
 from tests.support.c_realizer import c_bindings
 from tests.support.python_realizer.pack import python_bindings
 
@@ -271,15 +271,15 @@ def test_unshadowed_resolution_respects_user_functions_and_existing_builtins() -
 def test_realization_requires_explicit_pack_recipe_and_supports_all_keys() -> None:
     @realizes(IntrinsicCall)
     class Unsupported:
-        variant @= "intrinsic.global.typed_join"
-        template @= "${arg0} + ${arg1}"
-        supports @= ("intrinsic.global.typed_join",)
+        variant = "intrinsic.global.typed_join"
+        template = "${arg0} + ${arg1}"
+        supports = ("intrinsic.global.typed_join",)
 
     @realizes(IntrinsicCall)
     class Accepted:
-        variant @= "intrinsic.global.typed_join"
-        template @= "${arg0} + ${arg1}"
-        supports @= (
+        variant = "intrinsic.global.typed_join"
+        template = "${arg0} + ${arg1}"
+        supports = (
             "intrinsic.global.typed_join",
             "intrinsic.effects.new_string",
             "intrinsic.arguments.once",
@@ -293,8 +293,8 @@ def test_realization_requires_explicit_pack_recipe_and_supports_all_keys() -> No
     # The Intrinsic's own binding can work independent of Program layout.
     @realizes(Literal)
     class TextLiteral:
-        variant @= "string"
-        render @= lambda node, ctx: repr(node.value)
+        variant = "string"
+        render = lambda node, ctx: repr(node.value)
 
     ready = RealizationRegistry("demo", (Accepted, TextLiteral))
     assert realize(model, realizations=ready) == "'a' + 'b'\n"
@@ -312,9 +312,9 @@ def test_realization_requires_explicit_pack_recipe_and_supports_all_keys() -> No
 def test_simple_template_cannot_drop_duplicate_or_reorder_expression_slots() -> None:
     @realizes(IntrinsicCall)
     class Drop:
-        variant @= "intrinsic.global.typed_join"
-        template @= "${arg0}"
-        supports @= (
+        variant = "intrinsic.global.typed_join"
+        template = "${arg0}"
+        supports = (
             "intrinsic.global.typed_join",
             "intrinsic.effects.new_string",
             "intrinsic.arguments.once",
@@ -323,9 +323,9 @@ def test_simple_template_cannot_drop_duplicate_or_reorder_expression_slots() -> 
 
     @realizes(IntrinsicCall)
     class WrongOrder:
-        variant @= "intrinsic.global.typed_join"
-        template @= "${arg1} + ${arg0}"
-        supports @= (
+        variant = "intrinsic.global.typed_join"
+        template = "${arg1} + ${arg0}"
+        supports = (
             "intrinsic.global.typed_join",
             "intrinsic.effects.new_string",
             "intrinsic.arguments.once",

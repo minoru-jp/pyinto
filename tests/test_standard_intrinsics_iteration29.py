@@ -22,7 +22,7 @@ from pyinto.constructs.admission import required_contracts
 from pyinto.frontend import UnsupportedPython
 from pyinto.intrinsics import IntrinsicRegistry, standard_intrinsics
 from pyinto.realizations.registry import RealizationRegistry
-from pyinto.realizations.regulation import realizes, supports, template, variant
+from pyinto.realizations.regulation import realizes
 
 STR = ValueType(ValueKind.STRING)
 INT = ValueType(ValueKind.INTEGER)
@@ -194,9 +194,9 @@ def test_user_function_shadows_standard_intrinsic() -> None:
 def test_catalog_is_never_a_realization_implementation() -> None:
     @realizes(IntrinsicCall)
     class OnlyInteger:
-        variant @= "intrinsic.global.str"
-        template @= "${arg0}"
-        supports @= (
+        variant = "intrinsic.global.str"
+        template = "${arg0}"
+        supports = (
             "intrinsic.global.str",
             "intrinsic.stringify.int_repr",
             "intrinsic.arguments.once",

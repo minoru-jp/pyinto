@@ -22,7 +22,7 @@ from pyinto.frontend import UnsupportedPython
 from pyinto.frontend.expressions import ExpressionNormalizer
 from pyinto.intrinsics import IntrinsicRegistry, standard_intrinsics
 from pyinto.realizations.registry import EmitContext, RealizationRegistry
-from pyinto.realizations.regulation import realizes, supports, template
+from pyinto.realizations.regulation import realizes
 from tests.support.python_realizer.pack import python_bindings
 
 
@@ -140,7 +140,7 @@ def test_admission_requirements_are_enforced_before_rendering() -> None:
 
     @realizes(FormattedString)
     class StringOnly:
-        template @= "${fragments}"
+        template = "${fragments}"
 
     bindings = RealizationRegistry("test", (StringOnly,))
     with pytest.raises(ConstructError, match="format.string.fragments_once_in_order"):
@@ -148,8 +148,8 @@ def test_admission_requirements_are_enforced_before_rendering() -> None:
 
     @realizes(FormattedString)
     class StringOrdered:
-        template @= "${fragments}"
-        supports @= ("format.string.fragments_once_in_order",)
+        template = "${fragments}"
+        supports = ("format.string.fragments_once_in_order",)
 
     bindings = RealizationRegistry("test", (StringOrdered,))
     assert bindings.recipe(formatted.value, EmitContext(bindings)).template
@@ -159,8 +159,8 @@ def test_admission_requirements_are_enforced_before_rendering() -> None:
 
     @realizes(PrintValues)
     class PrintOnly:
-        template @= 'puts("")'
-        supports @= ("output.print.space_join_newline",)
+        template = 'puts("")'
+        supports = ("output.print.space_join_newline",)
 
     bindings = RealizationRegistry("test", (PrintOnly,))
     with pytest.raises(ConstructError, match="output.print.evaluate_before_write"):

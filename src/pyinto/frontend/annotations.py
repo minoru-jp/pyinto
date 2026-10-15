@@ -9,7 +9,8 @@ from __future__ import annotations
 import ast
 from collections.abc import Mapping
 from collections.abc import Set as AbstractSet
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from types import MappingProxyType
 
 from pyinto.constructs import (
     CallableType,
@@ -23,6 +24,7 @@ from pyinto.constructs import (
 from pyinto.interface_mapping import InterfaceMappingRegistry
 
 from .errors import reject
+from .kinds import generic_annotation, plain_annotation
 
 _ANNOTATIONS = {
     "int": ValueKind.INTEGER,
@@ -40,6 +42,10 @@ class AnnotationScope:
     callable_aliases: AbstractSet[str]
     interface_aliases: Mapping[str, str]
     interface_mappings: InterfaceMappingRegistry
+    # Local import name -> pyinto.kinds word.
+    kind_aliases: Mapping[str, str] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
 
 
 def parse_annotation(
@@ -47,7 +53,7 @@ def parse_annotation(
 ) -> tuple[str, ValueType | None]:
     """Return source spelling and one ValueType; None denotes a interface mapping annotation.
 
-    The interface mapping class variant/constraints are resolved on construction, not from
+    The interface mapping class variant is resolved on construction, not from
     the type annotation. It is deliberately not fabricated as a ValueType.
     """
     if isinstance(node, ast.Constant) and node.value is None:
@@ -60,6 +66,8 @@ def parse_annotation(
         return node.value, ValueType(
             ValueKind.INSTANCE, instance_type=scope.classes[node.value]
         )
+    if isinstance(node, ast.Name) and node.id in scope.kind_aliases:
+        return node.id, plain_annotation(scope.kind_aliases[node.id], node)
     if isinstance(node, ast.Name):
         name = node.id
         if name in scope.classes:
@@ -92,6 +100,10 @@ def parse_annotation(
             )
         return parsed
 
+    if generic in scope.kind_aliases:
+        return ast.unparse(node), generic_annotation(
+            scope.kind_aliases[generic], node, typed
+        )
     if generic == "dict":
         if not isinstance(node.slice, ast.Tuple) or len(node.slice.elts) != 2:
             raise reject(node, "dict requires exactly two explicit types")

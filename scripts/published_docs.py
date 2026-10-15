@@ -33,12 +33,12 @@ FILES: dict[str, str] = {
     "specification/frontend.md": "docs/specification/frontend.md",
     "specification/composition.md": "docs/specification/composition.md",
     "specification/conversion.md": "docs/specification/conversion.md",
-    "target_implementation/INDEX.md": "docs/target_implementation/INDEX.md",
-    "target_implementation/implementation-guide.md": "docs/target_implementation/implementation-guide.md",
-    "target_implementation/declaration-reference.md": "docs/target_implementation/declaration-reference.md",
-    "target_implementation/construct-reference.md": "docs/target_implementation/construct-reference.md",
-    "target_implementation/admission-reference.md": "docs/target_implementation/admission-reference.md",
-    "target_implementation/verification-guide.md": "docs/target_implementation/verification-guide.md",
+    "realizer/INDEX.md": "docs/realizer/INDEX.md",
+    "realizer/implementation-guide.md": "docs/realizer/implementation-guide.md",
+    "realizer/declaration-reference.md": "docs/realizer/declaration-reference.md",
+    "realizer/construct-reference.md": "docs/realizer/construct-reference.md",
+    "realizer/admission-reference.md": "docs/realizer/admission-reference.md",
+    "realizer/verification-guide.md": "docs/realizer/verification-guide.md",
 }
 
 # Translation completeness is a tracked editorial assertion, not a guessed feature.
@@ -171,8 +171,8 @@ def translated_status_errors(original: str, english: str) -> list[str]:
     headings = (
         ("開発段階", "Development stage"),
         (
-            "現在の公開・開発構成（第50回）",
-            "Current distribution and development structure (Iteration 50)",
+            "現在の公開・開発構成（0.2.0）",
+            "Current distribution and development structure (0.2.0)",
         ),
         ("実装済み", "Implemented"),
         ("未実装・制限", "Unimplemented features and limitations"),
@@ -326,10 +326,8 @@ def check() -> int:
             (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"),
         )
     )
-    orig_ref = (SOURCE / "target_implementation" / "construct-reference.md").read_text()
-    en_ref = (
-        ROOT / "docs" / "target_implementation" / "construct-reference.md"
-    ).read_text()
+    orig_ref = (SOURCE / "realizer" / "construct-reference.md").read_text()
+    en_ref = (ROOT / "docs" / "realizer" / "construct-reference.md").read_text()
     construct_pattern = (
         r"^\| (\w+) \| `?(?:default|false|true|integer|open domain|開いた定義域)"
     )

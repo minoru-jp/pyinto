@@ -23,22 +23,8 @@ from pyinto.model import value_types as vt
 from pyinto.realizations.layout import TemplatePlan, Text
 from pyinto.realizations.registry import RealizationRegistry, TextArtifactSession
 from pyinto.realizations.regulation import (
-    accepts,
-    forbidden_prefixes,
     naming,
-    pack_dispatch,
-    pack_entries,
-    pack_session,
-    pack_target,
     realizes,
-    render,
-    requirement_line,
-    requires,
-    reserved,
-    supports,
-    template,
-    type_name,
-    variant,
 )
 
 
@@ -68,27 +54,27 @@ def _string(value: str) -> str:
 
 @realizes(lang.Program)
 class CProgram:
-    template @= "${requirements}\nint main(void) {\n    ${body}\n    return 0;\n}"
+    template = "${requirements}\nint main(void) {\n    ${body}\n    return 0;\n}"
 
 
 @realizes(lang.Block)
 class CBlock:
-    template @= "${children}"
+    template = "${children}"
 
 
 @realizes(lang.Initialize)
 class CInitialize:
-    template @= "${type} ${name} = ${value};"
+    template = "${type} ${name} = ${value};"
 
 
 @realizes(lang.Assign)
 class CAssign:
-    template @= "${target} = ${value};"
+    template = "${target} = ${value};"
 
 
 @realizes(lang.ExpressionStatement)
 class CExpressionStatement:
-    template @= "${expression};"
+    template = "${expression};"
 
 
 def _c_comparison(node: Comparison, context: object) -> str:
@@ -107,29 +93,29 @@ def _c_comparison(node: Comparison, context: object) -> str:
 
 @realizes(lang.Comparison)
 class CComparison:
-    supports @= ("evaluation.operands.left_to_right",)
-    render @= _c_comparison
+    supports = ("evaluation.operands.left_to_right",)
+    render = _c_comparison
 
 
 @realizes(lang.Reference)
 class CReference:
-    template @= "${name}"
+    template = "${name}"
 
 
 @realizes(lang.Branch)
 class CBranch:
-    template @= "if (${condition}) {\n    ${then}\n}"
+    template = "if (${condition}) {\n    ${then}\n}"
 
 
 @realizes(lang.Branch)
 class CBranchWithElse:
-    variant @= "with_else"
-    template @= "if (${condition}) {\n    ${then}\n} else {\n    ${otherwise}\n}"
+    variant = "with_else"
+    template = "if (${condition}) {\n    ${then}\n} else {\n    ${otherwise}\n}"
 
 
 @realizes(lang.While)
 class CWhile:
-    template @= "while (${condition}) {\n    ${body}\n}"
+    template = "while (${condition}) {\n    ${body}\n}"
 
 
 def _while_with_else(node: While, context: object) -> str:
@@ -154,18 +140,18 @@ def _while_with_else(node: While, context: object) -> str:
 
 @realizes(lang.While)
 class CWhileWithElse:
-    variant @= "with_else"
-    render @= _while_with_else
+    variant = "with_else"
+    render = _while_with_else
 
 
 @realizes(lang.Break)
 class CBreak:
-    template @= "break;"
+    template = "break;"
 
 
 @realizes(lang.Continue)
 class CContinue:
-    template @= "continue;"
+    template = "continue;"
 
 
 def _c_for_range(node: For, context: object) -> TemplatePlan:
@@ -234,51 +220,51 @@ def _c_for_range(node: For, context: object) -> TemplatePlan:
 
 @realizes(lang.For)
 class CFor:
-    supports @= ("iteration.source.range", "loop.for.break_continue")
-    render @= _c_for_range
+    supports = ("iteration.source.range", "loop.for.break_continue")
+    render = _c_for_range
 
 
 @realizes(lang.For)
 class CForWithElse:
-    variant @= "with_else"
-    supports @= (
+    variant = "with_else"
+    supports = (
         "iteration.source.range",
         "loop.for.break_continue",
         "loop.for.normal_completion_else",
     )
-    render @= _c_for_range
+    render = _c_for_range
 
 
 @realizes(vt.Integer)
 class CInteger:
-    type_name @= "long long"
+    type_name = "long long"
 
 
 @realizes(vt.Boolean)
 class CBoolean:
-    type_name @= "_Bool"
+    type_name = "_Bool"
 
 
 @realizes(vt.String)
 class CString:
-    type_name @= "const char *"
+    type_name = "const char *"
 
 
 @realizes(lang.Literal)
 class CIntegerLiteral:
-    variant @= "integer"
-    render @= lambda node, context: Text(_integer(node.value))
+    variant = "integer"
+    render = lambda node, context: Text(_integer(node.value))
 
 
 @realizes(lang.Literal)
 class CStringLiteral:
-    variant @= "string"
-    render @= lambda node, context: Text(_string(node.value))
+    variant = "string"
+    render = lambda node, context: Text(_string(node.value))
 
 
 @naming
 class CNames:
-    reserved @= frozenset(
+    reserved = frozenset(
         [
             "auto",
             "break",
@@ -327,15 +313,15 @@ class CNames:
             "main",
         ]
     )
-    forbidden_prefixes @= ("__", "sk_")
-    requirement_line @= "#include <${name}>"
+    forbidden_prefixes = ("__", "sk_")
+    requirement_line = "#include <${name}>"
 
 
 @realizes(builtin.PrintCall)
 class CPrint:
-    accepts @= ("string",)
-    requires @= "stdio.h"
-    template @= "puts(${arg0});"
+    accepts = ("string",)
+    requires = ("stdio.h",)
+    template = "puts(${arg0});"
 
 
 C_DECLARATIONS = (
@@ -365,10 +351,10 @@ C_DECLARATIONS = (
 
 
 class CTargetPack:
-    pack_target @= "c"
-    pack_entries @= C_DECLARATIONS
-    pack_dispatch @= "composition"
-    pack_session @= TextArtifactSession
+    target = "c"
+    entries = C_DECLARATIONS
+    dispatch = "composition"
+    session = TextArtifactSession
 
 
 @lru_cache(maxsize=1)

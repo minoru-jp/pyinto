@@ -8,19 +8,19 @@ import subprocess
 import sys
 from pathlib import Path
 
-from devdocs.canonical_sources.target_implementation.admission_reference import (
+from devdocs.canonical_sources.realizer.admission_reference import (
     baseline_rule_rows,
 )
-from devdocs.canonical_sources.target_implementation.construct_reference import (
+from devdocs.canonical_sources.realizer.construct_reference import (
     language_variant_rows,
 )
-from devdocs.canonical_sources.target_implementation.examples import (
+from devdocs.canonical_sources.realizer.examples import (
     COMPOSITION_EXAMPLE,
     STRUCTURAL_EXAMPLE,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-TARGET_DOCS = ROOT / "devdocs" / "canonical_documents" / "target_implementation"
+TARGET_DOCS = ROOT / "devdocs" / "canonical_documents" / "realizer"
 
 
 def _run_snippet(source: str) -> None:

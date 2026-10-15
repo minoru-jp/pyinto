@@ -34,13 +34,13 @@ SPEC_MODULES = (
 )
 SPEC_PACKAGE = "devdocs.canonical_sources.specification"
 TARGET_MODULES = (
-    "devdocs.canonical_sources.target_implementation.implementation_guide",
-    "devdocs.canonical_sources.target_implementation.declaration_reference",
-    "devdocs.canonical_sources.target_implementation.construct_reference",
-    "devdocs.canonical_sources.target_implementation.admission_reference",
-    "devdocs.canonical_sources.target_implementation.verification_guide",
+    "devdocs.canonical_sources.realizer.implementation_guide",
+    "devdocs.canonical_sources.realizer.declaration_reference",
+    "devdocs.canonical_sources.realizer.construct_reference",
+    "devdocs.canonical_sources.realizer.admission_reference",
+    "devdocs.canonical_sources.realizer.verification_guide",
 )
-TARGET_PACKAGE = "devdocs.canonical_sources.target_implementation"
+TARGET_PACKAGE = "devdocs.canonical_sources.realizer"
 EXPECTED = (
     "README.md",
     "STATUS.md",
@@ -53,12 +53,12 @@ EXPECTED = (
     "specification/composition.md",
     "specification/conversion.md",
     "specification/INDEX.md",
-    "target_implementation/implementation-guide.md",
-    "target_implementation/declaration-reference.md",
-    "target_implementation/construct-reference.md",
-    "target_implementation/admission-reference.md",
-    "target_implementation/verification-guide.md",
-    "target_implementation/INDEX.md",
+    "realizer/implementation-guide.md",
+    "realizer/declaration-reference.md",
+    "realizer/construct-reference.md",
+    "realizer/admission-reference.md",
+    "realizer/verification-guide.md",
+    "realizer/INDEX.md",
 )
 
 
@@ -161,7 +161,7 @@ def render(destination: Path) -> None:
         env=env,
         check=True,
     )
-    target_output = destination / "target_implementation"
+    target_output = destination / "realizer"
     target_output.mkdir(parents=True, exist_ok=True)
     for module in TARGET_MODULES:
         subprocess.run(
@@ -194,7 +194,7 @@ def render(destination: Path) -> None:
             "--notice",
             str(NOTICE),
             "--index-title",
-            "Target Implementation 文書ガイド",
+            "Realizer 文書ガイド",
         ],
         cwd=ROOT,
         env=env,

@@ -58,7 +58,7 @@ def verify(directory: Path) -> None:
             "pyproject.toml",
             "docs/GLOSSARY.md",
             "docs/specification/INDEX.md",
-            "docs/target_implementation/INDEX.md",
+            "docs/realizer/INDEX.md",
             "src/pyinto/__init__.py",
         )
         missing = [item for item in required if prefix + item not in members]

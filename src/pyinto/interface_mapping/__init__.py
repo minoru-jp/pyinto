@@ -1,6 +1,6 @@
 """Explicit, target-independent mappings from Python interface mapping calls to Constructs."""
 
-from pyinto.interface_mapping.declarations import factory, maps, signature
+from pyinto.interface_mapping.declarations import maps, signature
 from pyinto.interface_mapping.registry import (
     InterfaceClassMapping,
     InterfaceFunctionMapping,
@@ -17,7 +17,6 @@ __all__ = [
     "InterfaceMethodMapping",
     "InterfaceParameter",
     "InterfaceVariadicParameter",
-    "factory",
     "maps",
     "signature",
 ]

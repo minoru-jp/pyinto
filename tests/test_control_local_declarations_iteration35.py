@@ -198,7 +198,7 @@ if True:
     assert isinstance(program.body.children[1], Branch)
 
 
-def test_unsupported_port_and_exception_body_unchanged() -> None:
+def test_unsupported_mapping_and_exception_body_unchanged() -> None:
     with pytest.raises(UnsupportedPython, match="New bindings"):
         PythonFrontend().parse("""
 try:

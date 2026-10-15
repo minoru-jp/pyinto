@@ -12,7 +12,24 @@ from shikumi_devdoc.norms.document import title
     heading="title",
 )
 class CHANGELOG:
-    """0.1.0 の公開に向けた変更と以前の開発履歴。"""
+    """公開バージョンごとの変更と、それ以前の開発履歴。"""
+
+    class V0_2_0:
+        """Target宣言の通常クラス属性化、Kindの語彙（型・メモリ・宣言）の追加、用語の整理、Hostの実行時依存・整数制約・メモリのデモの撤廃。"""
+
+        title @= "0.2.0（Alpha）"
+        version @= "0.2.0"
+        changed @= "Target Packと実現エントリの宣言を、Shikumiの `@=` 記述から通常のクラス属性 `=` へ変更（CMP_032）。Packの宣言名から `pack_` 接頭辞を外し、`target` / `entries` / `dispatch` / `session` / `semantics` / `unhandled` / `runtime` / `runtime_schema` とした。`requires` は複数回の `@=` による蓄積ではなく、strのtupleで一括指定する。役割マーカー `@realizes(element)` / `@naming` と、各宣言の意味・既定値・Admission・Dispatchの契約は維持。"
+        changed @= "Interface Mappingの関数署名で、Model factoryを `factory @= ...` ではなく入れ子クラスの通常属性 `factory = ...` で宣言するよう変更。`@maps(function)` / `@signature(...)` の親子構造、`InterfaceMappingRegistry.from_declarations()` による既存関数Mappingへの変換、署名照合と拒否条件は維持。"
+        changed @= 'Interface MappingでModel内部に残っていたPortの名前を改めた（CST_002、FRT_079）。`PortType` は `MappedType`、`ValueKind.PORT_OBJECT`（値 `"port_object"`）は `ValueKind.MAPPED_OBJECT`（値 `"mapped_object"`）、`Symbol.port_type` は `Symbol.mapped_type`、型表記の鍵 `port:{source}.{variant}` は `mapped:{source}.{variant}` とし、旧名の別名は残さない。文書では関数の対応付けを関数マッピング、クラスの対応付けをクラスマッピング、クラスマッピングで生成したオブジェクトをマップ済みオブジェクトと呼ぶ。開発用の契約の境界 `FrontendPort` / `CompositionPort` は `FrontendBoundary` / `CompositionBoundary`（`pyinto.contracts.boundaries`）に、`PortContract` / `InstancePortContract` は `FunctionMappingContract` / `ClassMappingContract` に、デモ `examples/port_demo` は `examples/mapping_demo` に改めた。'
+        changed @= "文書の用語を、変換の流れに沿って Source / Host / Model / Target / Realizer / Realization / Target Pack / Artifact の一組に整理した。Target Implementation は Realizer に改め、旧来「Realizer」と書いていた個々の規則は Realization と呼ぶ。Model は1つの Source から作る Construct の木を指す。用語集に Realizer / Source / Target Pack / Artifact を設け、Target Implementation の項を削除した。Target実装向けの文書の置き場所を `target_implementation/` から `realizer/`（英語版は `docs/realizer/`）へ移し、題名を Realizer Guide とした。APIとコードの名前は変えていない。"
+        added @= "宣言クラスの読み取り規則を追加（CMP_032）。そのクラス自身の `vars(cls)` だけを読み、`_` 始まりの名前とdunderを無視する。未知の公開名（綴り誤りを含む）、宣言名ごとの型に合わない値、strのtupleではない `requires`、同一マーカーの重複適用、宣言クラスからの継承を登録時に `ValueError` として拒否する。`render` / `visit` をクラス本体の `def` で定義でき、dict値への `typing.ClassVar` 注釈も受け付ける。"
+        added @= "Kindの語彙 `pyinto.kinds` を追加（CST_076、CST_077、CST_078、CST_081、FRT_075、FRT_076、FRT_077、FRT_078）。公開面 `datatypes` / `memory` / `declarations` と、全Targetが解釈する `general` の段・言語に近い選択肢の `detailed` の段に分かれる。`datatypes.general` は `Wide` / `Narrow`（`int` / `float` に対する相対的な大小、入れ子で段階）、`Unsigned`、役割の `Size` / `Index` / `Byte`、`datatypes.detailed` は `Int[N]` / `UInt[N]` / `Float[N]` / `Decimal[N]` / `CodeUnit[N]` / `Char` / `Array[T, N]` / `Enum[T]` / `Function[[...], R]` / `Void` / `Nil` / `Null`、`memory.detailed` は `Pointer[T]`（`address` / `load` / `store`）/ `Ref[T]`、`declarations.detailed` は `@Interface` / `@MixIn` / `@Implements(...)` を提供する。Hostは語の意味を定義せず、Python側の形状と `KindLabel` としてModelに記録するだけで、ラベルは型の互換判定に参加しない。"
+        added @= "Target側のKind対応を追加（CMP_033、CMP_034、CMP_035、CMP_036）。同じ構成の `pyinto.model.kinds` の要素を `@realizes` の型表記の登録対象にでき、`type_name()` はラベルを持つ型に `kind:語` の登録を使い、未登録なら拒否する。補助関数 `profile()`（Wide / Narrow / Unsigned を基準の型・段階・符号に読み替え）と `missing_general()`（未登録の汎用語彙の一覧）を提供し、型表記の登録でも `requires` を宣言できるようにした。Kindが関わる演算にはLanguage ConstructのPython意味義務を要求しない。新しいConstruct `NoneAlias` / `NoneAliasComparison` / `AddressOf` / `PointerLoad` / `PointerStore` と `ClassDefinition.labels` を公開する。"
+        added @= "動的メモリの語彙 `pyinto.kinds.memory.general` を追加（CST_079、CST_080、FRT_080）。形を `Buffer[T]`、所有を `Owned[X]` / `Shared[X]` の型のラベルで表し、操作は `Memory.new` / `Memory.new_buffer` / `Memory.release` / `Memory.resize` / `Memory.length` / `Memory.borrow` / `Memory.copy` / `Memory.fill` の少数の語に限る。解放の書き方（`free`、`delete[]`、`destroy`、何もしない等）は、Targetが型のラベルから選ぶ。対応するConstruct `MemoryNew` 等を公開し、C参照Realizerは単体の `Owned` だけを実現する。"
+        removed @= "Interface Mappingのクラスマッピングのコンストラクタが受け取っていた整数キーワード引数（数値の範囲・サイズの指定）と、`PortType.constraints` / `PortType.options()` を削除（CST_002、FRT_079）。マップ済みオブジェクトは `クラス.variant()` の引数なしの呼出で生成し、コンストラクタは `(Symbol) -> Construct` とする。数値のサイズを伴う型はKindの語彙で表す。"
+        removed @= "メモリのクラスマッピングのデモ（`examples/memory_port_demo`）と開発用の契約 `memory_port_contract` を削除。動的メモリはKindの語彙で表す。クラスマッピングの仕組みの検証は、メモリと関係のないテスト用のカウンタ（`tests/support/class_mapping.py`）へ移した。"
+        removed @= "Hostの実行時依存 `shikumi` を削除し、Host Wheelは第三者パッケージに依存しなくなった。`pyinto.realizations.regulation` の `@=` 記述器（`template`、`variant`、`pack_target` 等）、Shikumi InformationType定数、`entry_regulation` / `pack_regulation`、および `pyinto.interface_mapping.factory` を削除。宣言の読み取りには `read_entry()` / `read_pack()` と宣言名一覧 `ENTRY_FIELDS` / `PACK_FIELDS` を提供する。開発用のShikumi-ContraceとShikumi-Devdocは開発依存として維持。"
 
     class V0_1_0:
         """Runtime情報を利用するTarget契約の初回公開。"""

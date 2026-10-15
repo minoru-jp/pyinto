@@ -1,6 +1,6 @@
 """Explicit Python interface mapping declarations, no target APIs or inference in Core.
 
-Both function Ports and object Ports resolve by exact fully qualified import.
+Both function mappings and class mappings resolve by exact fully qualified import.
 Object declarations provide only explicit constructors, methods and properties.
 They are the sole gateway from Python surface syntax to domain Constructs.
 """
@@ -101,14 +101,14 @@ class InterfaceMethodMapping:
 
 @dataclass(frozen=True)
 class InterfaceClassMapping:
-    """Opt-in instance Port, independent of the concrete Target Binding.
+    """Opt-in class mapping, independent of the concrete Target Binding.
 
-    Constructor keyword values are literal integers in the initial prototype.
+    Constructors take no arguments; the variant name is the constructor name.
     Cleanup is registered as an ordinary explicit instance method.
     """
 
     source: str
-    constructors: Mapping[str, Callable[[Symbol, Mapping[str, int]], Construct]]
+    constructors: Mapping[str, Callable[[Symbol], Construct]]
     methods: Mapping[str, InterfaceMethodMapping]
     properties: Mapping[str, Callable[[Construct, Reference], Value]]
 
@@ -295,5 +295,5 @@ class InterfaceMappingRegistry:
         return self._entries.get(source, ())
 
     def get_class(self, source: str) -> InterfaceClassMapping | None:
-        """Resolve a registered object Port, never guess."""
+        """Resolve a registered class mapping, never guess."""
         return self._classes.get(source)

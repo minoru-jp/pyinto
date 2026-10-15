@@ -12,7 +12,7 @@ Canonical source: `devdocs/canonical_sources/specification/frontend.py`
 
 ## FRT_001
 
-`PythonFrontend.parse(source)` は入力テキストを Python AST で解析し、`Program` とその Construct 子構造へ正規化する。元の Python プログラムや Port メソッドを実行しない。受理できない構文・未解決の参照は推測で補わず拒否する。
+`PythonFrontend.parse(source)` は入力テキストを Python AST で解析し、`Program` とその Construct 子構造へ正規化する。元の Python プログラムやマップ先のメソッドを実行しない。受理できない構文・未解決の参照は推測で補わず拒否する。
 
 title: AST からの静的な正規化
 
@@ -22,7 +22,7 @@ related: [CST_001](construct.md#cst_001)
 
 ## FRT_002
 
-新しい変数は原則として型アノテーションを伴う値付きの宣言でなければならない。ただし、FRT_070 の `for` 反復入口における既知要素型からの導入だけは例外とする。既存名への単純な再代入は型を再宣言せずに許容するが、既知の型との不整合は拒否する。通常型は現状 `int` / `str` / `bool` / `float` / `object`、明示 import された `typing.Any`、登録済み Port クラスに限定される。通常の型注釈は表記と一つの `ValueType` に正規化し、Port クラスの注釈は Port 宣言として別に扱う。型を7項目へ分解する中間表現は用いない。
+新しい変数は原則として型アノテーションを伴う値付きの宣言でなければならない。ただし、FRT_070 の `for` 反復入口における既知要素型からの導入だけは例外とする。既存名への単純な再代入は型を再宣言せずに許容するが、既知の型との不整合は拒否する。通常型は現状 `int` / `str` / `bool` / `float` / `object`、明示 import された `typing.Any`、登録済みのマップ済みクラスに限定される。通常の型注釈は表記と一つの `ValueType` に正規化し、マップ済みクラスの注釈はマップ済みオブジェクトの宣言として別に扱う。型を7項目へ分解する中間表現は用いない。
 
 title: 明示的な型付き束縛
 
@@ -32,7 +32,7 @@ related: [CST_002](construct.md#cst_002)
 
 ## FRT_003
 
-`if` / `while` / `for` / `with` の本体および各 `else` 節の型付き新規束縛は FRT_071 の限定規則に従う。これらのブロックにおける Port オブジェクトの宣言・再束縛は拒否する。`try` 系の各節での新規宣言もFRT_021の制限を維持する。`for` の単一ループ変数の導入はFRT_070の限定規則に従い、`with ... as` の束縛先は使用前に型付きで宣言されていなければならない。`for` の反復元は整数 `range`、文字列、`list[T]`、固定長 `tuple` に限定し、反復要素の既知の型がすべて対象変数へ代入可能な場合だけ受理する（空タプルは要素型の検査を要しない）。型の不明な一般 Iterable、辞書、非反復可能な値は拒否する。`break` / `continue` は少なくとも一つの外側ループを必要とする。
+`if` / `while` / `for` / `with` の本体および各 `else` 節の型付き新規束縛は FRT_071 の限定規則に従う。これらのブロックにおけるマップ済みオブジェクトの宣言・再束縛は拒否する。`try` 系の各節での新規宣言もFRT_021の制限を維持する。`for` の単一ループ変数の導入はFRT_070の限定規則に従い、`with ... as` の束縛先は使用前に型付きで宣言されていなければならない。`for` の反復元は整数 `range`、文字列、`list[T]`、固定長 `tuple` に限定し、反復要素の既知の型がすべて対象変数へ代入可能な場合だけ受理する（空タプルは要素型の検査を要しない）。型の不明な一般 Iterable、辞書、非反復可能な値は拒否する。`break` / `continue` は少なくとも一つの外側ループを必要とする。
 
 title: 制御構造内の名前束縛の制限
 
@@ -52,7 +52,7 @@ related: [CST_004](construct.md#cst_004)
 
 ## FRT_005
 
-Python側のInterface Mappingは、`InterfaceMappingRegistry`に完全修飾名で明示登録された関数・クラスだけを認識する。先頭の連続するimport節では`from module import function [as alias]`に加え、`import module[.submodule] [as alias]`、`from package import submodule [as alias]`を受理する。絶対importだけを対象とし、完全修飾したMapping登録と一致するモジュール経由の関数呼出だけを解決する。標準ライブラリか独自ライブラリかでは区別しない。単に親パッケージをimportしただけでは未importの兄弟サブモジュールへの参照を許可しない。未登録のモジュール・関数・属性、スコープ衝突、動的参照は拒否する。import対象を実際にPythonで読み込んだり実行したりしない。外部関数Mappingは従来の位置引数型列に加え、`InterfaceParameter`による名前付きパラメータ・型・末尾の不変Modelリテラル既定値を明示登録できる。名前付き署名ではPythonの位置引数とキーワード引数を宣言順へ束縛し、余剰・不明・重複・型不一致・必須引数不足を拒否する。省略分は登録済みの既定値で補完し、Pythonソース中の引数式を実行しない。副作用のある式をキーワードの並び替えで再順序化する場合は、任意の外部Constructに汎用的な評価順序表現がないため拒否する。`InterfaceVariadicParameter`により同種の型で静的に個数が確定する可変長位置引数を宣言できる。Python式を再評価せずに順序付きの引数列としてfactoryへ渡し、動的な引数展開は拒否する。同一完全修飾関数名に異なる複数署名を明示登録でき、名前・個数・型・既定値を照合して候補が一つに確定した場合だけそのfactoryを呼ぶ。重複した署名は登録時、候補なし・複数候補は解析時に拒否し、登録順を優先順位にしない。引数式は署名候補数に関係なく一度だけ正規化する。展開引数・キーワード専用引数・動的なデフォルトは対象外である。従来の位置引数型列によるMappingは同じ受理条件で保持する。Shikumiの `@maps(function)` を親クラス、入れ子の `@signature(...)` と `factory @= ...` を個別の関数署名とし、`InterfaceMappingRegistry.from_declarations()` から従来と同じ `InterfaceFunctionMapping` へ明示的に変換できる。`@maps` は宣言時に参照したトップレベル関数の定義元 `__module__` と `__qualname__` を完全修飾識別名として使う。宣言の自動登録はせず、再エクスポート先の公開名、任意Callableやクラス/メソッドMappingの親子宣言、ソース解析時のPython関数実行は行わない。関数Mappingの特別な `_force` キーワードは副作用のない定数値に限定して正規化時に取り除く。
+Python側のInterface Mappingは、`InterfaceMappingRegistry`に完全修飾名で明示登録された関数・クラスだけを認識する。先頭の連続するimport節では`from module import function [as alias]`に加え、`import module[.submodule] [as alias]`、`from package import submodule [as alias]`を受理する。絶対importだけを対象とし、完全修飾したMapping登録と一致するモジュール経由の関数呼出だけを解決する。標準ライブラリか独自ライブラリかでは区別しない。単に親パッケージをimportしただけでは未importの兄弟サブモジュールへの参照を許可しない。未登録のモジュール・関数・属性、スコープ衝突、動的参照は拒否する。import対象を実際にPythonで読み込んだり実行したりしない。外部関数Mappingは従来の位置引数型列に加え、`InterfaceParameter`による名前付きパラメータ・型・末尾の不変Modelリテラル既定値を明示登録できる。名前付き署名ではPythonの位置引数とキーワード引数を宣言順へ束縛し、余剰・不明・重複・型不一致・必須引数不足を拒否する。省略分は登録済みの既定値で補完し、Pythonソース中の引数式を実行しない。副作用のある式をキーワードの並び替えで再順序化する場合は、任意の外部Constructに汎用的な評価順序表現がないため拒否する。`InterfaceVariadicParameter`により同種の型で静的に個数が確定する可変長位置引数を宣言できる。Python式を再評価せずに順序付きの引数列としてfactoryへ渡し、動的な引数展開は拒否する。同一完全修飾関数名に異なる複数署名を明示登録でき、名前・個数・型・既定値を照合して候補が一つに確定した場合だけそのfactoryを呼ぶ。重複した署名は登録時、候補なし・複数候補は解析時に拒否し、登録順を優先順位にしない。引数式は署名候補数に関係なく一度だけ正規化する。展開引数・キーワード専用引数・動的なデフォルトは対象外である。従来の位置引数型列によるMappingは同じ受理条件で保持する。`@maps(function)` を親クラス、入れ子の `@signature(...)` とクラス属性 `factory = ...` を個別の関数署名とし、`InterfaceMappingRegistry.from_declarations()` から従来と同じ `InterfaceFunctionMapping` へ明示的に変換できる。`@maps` は宣言時に参照したトップレベル関数の定義元 `__module__` と `__qualname__` を完全修飾識別名として使う。宣言の自動登録はせず、再エクスポート先の公開名、任意Callableやクラス/メソッドMappingの親子宣言、ソース解析時のPython関数実行は行わない。関数Mappingの特別な `_force` キーワードは副作用のない定数値に限定して正規化時に取り除く。
 
 title: 明示登録された外部API Mappingのみ解決
 
@@ -60,7 +60,7 @@ level: MUST
 
 ## FRT_006
 
-一つの `PythonFrontend` インスタンスを繰り返し使用しても、前回の parse で得た変数宣言、関数・モジュールimport別名、ループ深さ、Port オブジェクト参照を次の parse に持ち越してはならない。
+一つの `PythonFrontend` インスタンスを繰り返し使用しても、前回の parse で得た変数宣言、関数・モジュールimport別名、ループ深さ、マップ済みオブジェクト参照を次の parse に持ち越してはならない。
 
 title: 解析単位間の状態分離
 
@@ -138,7 +138,7 @@ related: [CST_020](construct.md#cst_020), [CST_021](construct.md#cst_021)
 
 ## FRT_014
 
-第一級関数値を参照・型付きで受け渡すことと、当該値を呼び出すことは異なる契約とする。関数値を介する間接呼出は FRT_015〜016 で別途規定し、第10段階までの未対応制限をそこで解除する。Callable の `...`、型推論、未登録型、Port 形状を含む Callable、`nonlocal` による再束縛、動的な関数属性操作などは引き続き受理しない。参照・捕捉対象の静的関係は保持するが、関数の生存期間・呼出環境の実現と Target での可否は Realization の責務とする。既存の `with` その他の意味契約は変更しない。
+第一級関数値を参照・型付きで受け渡すことと、当該値を呼び出すことは異なる契約とする。関数値を介する間接呼出は FRT_015〜016 で別途規定し、第10段階までの未対応制限をそこで解除する。Callable の `...`、型推論、未登録型、マップ済みの形状を含む Callable、`nonlocal` による再束縛、動的な関数属性操作などは引き続き受理しない。参照・捕捉対象の静的関係は保持するが、関数の生存期間・呼出環境の実現と Target での可否は Realization の責務とする。既存の `with` その他の意味契約は変更しない。
 
 title: 関数値の受理境界と間接呼出の別契約
 
@@ -208,7 +208,7 @@ related: [CST_027](construct.md#cst_027), [CST_028](construct.md#cst_028)
 
 ## FRT_021
 
-`except ... as name` による例外値の束縛、裸の `except:`、再送出 `raise`、任意クラスの `raise`、`raise ... from ...` による原因連鎖、`except*` / 例外グループ、複数引数・キーワード引数・非文字列メッセージ、特殊な例外オブジェクトの操作は未対応として拒否する。`try` の各節で新しい型付き束縛や Port 再束縛を行うことも既存の制御本体規則に合わせて拒否する。`return` / `break` / `continue` を含む制御移行は構造として保持し、Python の例外実行を推論せず Realization の責務に残す。新規例外 Construct の Target Realization は未登録とする。既存の `with`、関数、式、スコープの意味論を今回の原則に従って再解釈・変更しない。
+`except ... as name` による例外値の束縛、裸の `except:`、再送出 `raise`、任意クラスの `raise`、`raise ... from ...` による原因連鎖、`except*` / 例外グループ、複数引数・キーワード引数・非文字列メッセージ、特殊な例外オブジェクトの操作は未対応として拒否する。`try` の各節で新しい型付き束縛やマップ済みオブジェクトの再束縛を行うことも既存の制御本体規則に合わせて拒否する。`return` / `break` / `continue` を含む制御移行は構造として保持し、Python の例外実行を推論せず Realization の責務に残す。新規例外 Construct の Target Realization は未登録とする。既存の `with`、関数、式、スコープの意味論を今回の原則に従って再解釈・変更しない。
 
 title: 例外の受理境界と未対応 Realization
 
@@ -398,7 +398,7 @@ related: [CST_045](construct.md#cst_045)
 
 ## FRT_040
 
-名前が未束縛の直接呼出 `abs(x)` を整数 `Absolute`、`min(a, b, ...)` / `max(a, b, ...)` を整数 `Extremum` に正規化する。`abs` は位置引数1個、`min` / `max` は2個以上の位置引数を要求し、すべてのオペランドは厳密に `ValueKind.INTEGER` とする。演算対象の式と引数の順序は保持し、Frontend は値を計算しない。呼出先のユーザー定義関数、関数型変数、登録 Port の同名参照が存在する場合は、それらの従来の解決を優先する。
+名前が未束縛の直接呼出 `abs(x)` を整数 `Absolute`、`min(a, b, ...)` / `max(a, b, ...)` を整数 `Extremum` に正規化する。`abs` は位置引数1個、`min` / `max` は2個以上の位置引数を要求し、すべてのオペランドは厳密に `ValueKind.INTEGER` とする。演算対象の式と引数の順序は保持し、Frontend は値を計算しない。呼出先のユーザー定義関数、関数型変数、登録済みのマッピング の同名参照が存在する場合は、それらの従来の解決を優先する。
 
 title: 整数 abs・min・max の型付き正規化
 
@@ -438,7 +438,7 @@ related: [CST_049](construct.md#cst_049)
 
 ## FRT_044
 
-`sum` / `any` / `all` の名前が既存の関数宣言、型付き関数変数または登録 Port として解決できる場合は、その既存経路を優先し組み込み操作として横取りしない。キーワード引数、展開引数、未宣言の汎用 Iterable、非対応の要素型や引数個数は明示的に拒否する。`IntegerSum` / `BooleanAggregate` の Target Realization はまだ提供せず、Model 正規化可能であっても生成先での実行は保証しない。既存の `Range` / `Call` / `With` / `Length` / `Absolute` / `Extremum` の意味論には変更を加えない。
+`sum` / `any` / `all` の名前が既存の関数宣言、型付き関数変数または登録済みのマッピング として解決できる場合は、その既存経路を優先し組み込み操作として横取りしない。キーワード引数、展開引数、未宣言の汎用 Iterable、非対応の要素型や引数個数は明示的に拒否する。`IntegerSum` / `BooleanAggregate` の Target Realization はまだ提供せず、Model 正規化可能であっても生成先での実行は保証しない。既存の `Range` / `Call` / `With` / `Length` / `Absolute` / `Extremum` の意味論には変更を加えない。
 
 title: 集約組み込み操作の名前解決と Target 境界
 
@@ -488,7 +488,7 @@ related: [CST_056](construct.md#cst_056)
 
 ## FRT_049
 
-不明なキーワード名、重複束縛、必須引数の不足、型不一致、過剰な位置引数、`*args` / `**kwargs` 展開は、推論せず明示的に拒否する。`CallableType` は仮引数名を持たないため、`FunctionValueCall` に対するキーワード引数は引き続き対象外である。組込み操作、Port の特殊な呼出、FRT_050〜051 で認めない一般的なデフォルト式、位置専用・キーワード専用引数、動的な関数変換も今回の対象外とする。対応する Target Realization がない場合は拒否する。新しい契約の追加を理由に、既存の `With`、数値・クラス・クロージャーの意味論を再解釈しない。
+不明なキーワード名、重複束縛、必須引数の不足、型不一致、過剰な位置引数、`*args` / `**kwargs` 展開は、推論せず明示的に拒否する。`CallableType` は仮引数名を持たないため、`FunctionValueCall` に対するキーワード引数は引き続き対象外である。組込み操作、マップ済み関数の特殊な呼出、FRT_050〜051 で認めない一般的なデフォルト式、位置専用・キーワード専用引数、動的な関数変換も今回の対象外とする。対応する Target Realization がない場合は拒否する。新しい契約の追加を理由に、既存の `With`、数値・クラス・クロージャーの意味論を再解釈しない。
 
 title: キーワード引数の制限・静的型検証と実現責務
 
@@ -628,7 +628,7 @@ related: [CST_065](construct.md#cst_065)
 
 ## FRT_063
 
-`PythonFrontend(intrinsics=IntrinsicRegistry(...))` は指定表に明示登録された基本操作だけを、解決済みの静的な型署名に基づき `IntrinsicCall` へ正規化する。intrinsics引数省略時はFRT_065の既定提供者表を用いる。従来の `len` / `abs` / `min` 等の専用Constructによる処理は維持し、Pythonの一般的な組込み関数・属性を無条件には自動採用しない。直接名の呼出は同名の宣言済み関数・型付きシンボル・Port・クラス等を優先し、明示登録された非衝突の名前だけを基本操作とする。属性呼出は、先に既存の静的インスタンスメソッド・super・クラスメソッドを解決し、残る静的な型付きReceiverだけを登録表の `(Receiver型, 名前)` で厳密に照合する。Receiverを二度正規化せず、位置引数の個数と型を確認する。未登録名、キーワード引数、引数展開、一般的なオーバーロード推論、暗黙の型変換、Python実装の任意メソッドの実行は拒否する。`convert(intrinsics=...)` は明示的な提供者表をFrontendへ渡せるが、Realizationは独立しており、標準C/Python Packには新しい実現規則を追加しない。
+`PythonFrontend(intrinsics=IntrinsicRegistry(...))` は指定表に明示登録された基本操作だけを、解決済みの静的な型署名に基づき `IntrinsicCall` へ正規化する。intrinsics引数省略時はFRT_065の既定提供者表を用いる。従来の `len` / `abs` / `min` 等の専用Constructによる処理は維持し、Pythonの一般的な組込み関数・属性を無条件には自動採用しない。直接名の呼出は同名の宣言済み関数・型付きシンボル・マップ済みの名前・クラス等を優先し、明示登録された非衝突の名前だけを基本操作とする。属性呼出は、先に既存の静的インスタンスメソッド・super・クラスメソッドを解決し、残る静的な型付きReceiverだけを登録表の `(Receiver型, 名前)` で厳密に照合する。Receiverを二度正規化せず、位置引数の個数と型を確認する。未登録名、キーワード引数、引数展開、一般的なオーバーロード推論、暗黙の型変換、Python実装の任意メソッドの実行は拒否する。`convert(intrinsics=...)` は明示的な提供者表をFrontendへ渡せるが、Realizationは独立しており、標準C/Python Packには新しい実現規則を追加しない。
 
 title: 型付き基本操作の登録照合とFrontendの限定正規化
 
@@ -648,7 +648,7 @@ related: [CST_067](construct.md#cst_067)
 
 ## FRT_065
 
-`PythonFrontend()` は既定で `standard_intrinsics()` を用い、`str()` / `int()` / `float()` の引数なしと、明示型 `int` / `float` / `str` / `bool` の1引数呼出、および静的な `str` Receiverの `upper()` / `lower()` を、選択済み `IntrinsicDefinition` を持つ `IntrinsicCall` に正規化する。型変換前後の型と個別obligationsはCST_068の提供者宣言によって決まり、入力値を実行せず、変換例外や大小文字のUnicode展開を推測しない。明示的に `intrinsics=IntrinsicRegistry(...)` を指定した場合は既定表を置き換え、`standard_intrinsics().extend(...)` で明示的に拡張できる。同名のユーザー宣言と既存Port/クラス優先、曖昧候補の拒否、キーワード・展開引数の拒否を維持する。複数引数の `int(str, base)`、登録していない型・メソッド、動的な型変換と書式指定は受理しない。Python/C標準Target Packには今回のIntrinsic実現レシピを登録せず、構築可能であることと出力可能であることを区別する。
+`PythonFrontend()` は既定で `standard_intrinsics()` を用い、`str()` / `int()` / `float()` の引数なしと、明示型 `int` / `float` / `str` / `bool` の1引数呼出、および静的な `str` Receiverの `upper()` / `lower()` を、選択済み `IntrinsicDefinition` を持つ `IntrinsicCall` に正規化する。型変換前後の型と個別obligationsはCST_068の提供者宣言によって決まり、入力値を実行せず、変換例外や大小文字のUnicode展開を推測しない。明示的に `intrinsics=IntrinsicRegistry(...)` を指定した場合は既定表を置き換え、`standard_intrinsics().extend(...)` で明示的に拡張できる。同名のユーザー宣言と既存のマップ済みの名前/クラス優先、曖昧候補の拒否、キーワード・展開引数の拒否を維持する。複数引数の `int(str, base)`、登録していない型・メソッド、動的な型変換と書式指定は受理しない。Python/C標準Target Packには今回のIntrinsic実現レシピを登録せず、構築可能であることと出力可能であることを区別する。
 
 title: 標準変換・Unicode文字列操作の静的正規化
 
@@ -683,7 +683,7 @@ related: [CST_071](construct.md#cst_071)
 
 ## FRT_067
 
-Python Frontendは単一の代入対象が括弧付きまたは括弧なしの固定長Tupleであり、各要素が既宣言の通常型付き名前である場合に限り、`ast.Assign` を一つの `UnpackAssign` に正規化する。右辺は一度だけ正規化し、静的な `tuple[T1, ...]` の形状から要素数と代入型を検証する。`a, b = b, a`、型が異なるTuple変数からの代入、重複対象を受理する。新規名の暗黙宣言、入れ子・スター付き・List対象・属性・添字へのアンパック、複数対象への連鎖代入、Portの再束縛、未知のTuple形状は拒否する。代入後のSymbolを再作成せず、Targetの一時領域を生成しない。Python/C Packに対応レシピを必須とはしない。
+Python Frontendは単一の代入対象が括弧付きまたは括弧なしの固定長Tupleであり、各要素が既宣言の通常型付き名前である場合に限り、`ast.Assign` を一つの `UnpackAssign` に正規化する。右辺は一度だけ正規化し、静的な `tuple[T1, ...]` の形状から要素数と代入型を検証する。`a, b = b, a`、型が異なるTuple変数からの代入、重複対象を受理する。新規名の暗黙宣言、入れ子・スター付き・List対象・属性・添字へのアンパック、複数対象への連鎖代入、マップ済みオブジェクトの再束縛、未知のTuple形状は拒否する。代入後のSymbolを再作成せず、Targetの一時領域を生成しない。Python/C Packに対応レシピを必須とはしない。
 
 title: 既宣言名への固定長Tupleアンパックの正規化
 
@@ -711,7 +711,7 @@ related: [CST_073](construct.md#cst_073), [CST_004](construct.md#cst_004)
 
 ## FRT_071
 
-`if` / `else`、`while` / `else`、`for` / `else` および `with` の制御本体において、型注釈と初期値が明示された通常の新規値名の `AnnAssign` を `Initialize` として受理する。各宣言は元の `Block` 内の実行位置に留め、宣言より後の同じ本体、またはその中の入れ子制御本体にある参照・再代入だけを許す。異なる分岐・ループの `else`・本体終了後からの新規名の参照は、Pythonでは束縛され得ても、一般的な経路別初期化解析を行わないため受理しない。これは新しいPythonのレキシカルスコープではなく、受理する参照位置の制限であり、Symbolの所有経路は既存の関数/モジュールのままとする。既宣言名の参照・再代入は従来どおり許す。新規制御ローカル名やFRT_070の新規反復変数をlambdaで捕捉する形式は、束縛寿命が本体を越える可能性があるため拒否する。関数定義の制御本体への配置、Portオブジェクトの宣言・再束縛、try/except/finally直下の新規名、スコープを跨ぐ別名の一般的な初期化解析、未注釈の暗黙宣言は今回拡張しない。新しいConstruct/Targetレシピを導入せず、既存のBlock・Initialize・Symbolを再利用し、標準Packの新規意味対応の宣言は追加しない。
+`if` / `else`、`while` / `else`、`for` / `else` および `with` の制御本体において、型注釈と初期値が明示された通常の新規値名の `AnnAssign` を `Initialize` として受理する。各宣言は元の `Block` 内の実行位置に留め、宣言より後の同じ本体、またはその中の入れ子制御本体にある参照・再代入だけを許す。異なる分岐・ループの `else`・本体終了後からの新規名の参照は、Pythonでは束縛され得ても、一般的な経路別初期化解析を行わないため受理しない。これは新しいPythonのレキシカルスコープではなく、受理する参照位置の制限であり、Symbolの所有経路は既存の関数/モジュールのままとする。既宣言名の参照・再代入は従来どおり許す。新規制御ローカル名やFRT_070の新規反復変数をlambdaで捕捉する形式は、束縛寿命が本体を越える可能性があるため拒否する。関数定義の制御本体への配置、マップ済みオブジェクトの宣言・再束縛、try/except/finally直下の新規名、スコープを跨ぐ別名の一般的な初期化解析、未注釈の暗黙宣言は今回拡張しない。新しいConstruct/Targetレシピを導入せず、既存のBlock・Initialize・Symbolを再利用し、標準Packの新規意味対応の宣言は追加しない。
 
 title: 制御本体内で使用が完結する型付き値宣言
 
@@ -731,7 +731,7 @@ related: [CST_074](construct.md#cst_074), [CST_017](construct.md#cst_017)
 
 ## FRT_072
 
-トップレベルの型付き `def` の先頭（任意のdocstringの直後）に並んだ `global name[, ...]` 宣言だけを受理する。各名前は関数定義より前に入力モジュールのトップレベルで型付き初期化済みの通常 `ValueType` 変数でなければならず、未知名、後方宣言、Port型、引数との衝突、重複宣言、同じ関数内での型付き再宣言・関数名との衝突を拒否する。宣言は関数スコープ全体の名前束縛にのみ作用し、実行Constructを追加しない。宣言された名前の読み取りと単純な `name = value` は、モジュールの元の `Symbol` を参照する `Reference` / `Assign` へ正規化し、従来の型一致と初期化規則を維持する。さらに既存FRT_060に従うint/floatのスカラー複合代入 `name += value` 等も、同じ元のSymbolを指す `AugAssign` として受理し、target_once・read_before_rhs・rebindの既存意味契約を維持する。通常の関数内からモジュール変数へ再代入するには明示 `global` が必要であり、`global` のない複合代入は関数全体でローカル束縛名とみなし、未宣言・初期化前なら外側にフォールバックせず拒否する。条件分岐内での既宣言名への代入は可能だが、`global` 自体を制御本体の内側や関数の途中に配置する構文は受理しない。ネストした関数とメソッド内の `global`、`nonlocal`、`global` 名を `for` 対象・型付き再宣言する操作、新規モジュール名の暗黙作成、非対象のPython束縛構文は拒否する。文字列・リスト等の非スカラー複合代入もFRT_060に従い拒否する。`Symbol.scope == ()` と宣言オブジェクト同一性は維持され、ModelにPython固有のGlobal Constructを追加しない。共有状態の格納場所、関数呼出での副作用・順序をTargetが正しく実現できるかは別の契約であり、未実装のC Target等では失敗を維持する。
+トップレベルの型付き `def` の先頭（任意のdocstringの直後）に並んだ `global name[, ...]` 宣言だけを受理する。各名前は関数定義より前に入力モジュールのトップレベルで型付き初期化済みの通常 `ValueType` 変数でなければならず、未知名、後方宣言、マップ済み型、引数との衝突、重複宣言、同じ関数内での型付き再宣言・関数名との衝突を拒否する。宣言は関数スコープ全体の名前束縛にのみ作用し、実行Constructを追加しない。宣言された名前の読み取りと単純な `name = value` は、モジュールの元の `Symbol` を参照する `Reference` / `Assign` へ正規化し、従来の型一致と初期化規則を維持する。さらに既存FRT_060に従うint/floatのスカラー複合代入 `name += value` 等も、同じ元のSymbolを指す `AugAssign` として受理し、target_once・read_before_rhs・rebindの既存意味契約を維持する。通常の関数内からモジュール変数へ再代入するには明示 `global` が必要であり、`global` のない複合代入は関数全体でローカル束縛名とみなし、未宣言・初期化前なら外側にフォールバックせず拒否する。条件分岐内での既宣言名への代入は可能だが、`global` 自体を制御本体の内側や関数の途中に配置する構文は受理しない。ネストした関数とメソッド内の `global`、`nonlocal`、`global` 名を `for` 対象・型付き再宣言する操作、新規モジュール名の暗黙作成、非対象のPython束縛構文は拒否する。文字列・リスト等の非スカラー複合代入もFRT_060に従い拒否する。`Symbol.scope == ()` と宣言オブジェクト同一性は維持され、ModelにPython固有のGlobal Constructを追加しない。共有状態の格納場所、関数呼出での副作用・順序をTargetが正しく実現できるかは別の契約であり、未実装のC Target等では失敗を維持する。
 
 title: 明示的globalによる既宣言モジュール変数への限定的再代入
 
@@ -744,5 +744,53 @@ related: [CST_002](construct.md#cst_002), [CST_003](construct.md#cst_003), [CST_
 トップレベルの `def __pyinto_runtime__():` は特殊なRuntime関数としてASTの段階で切り分け、Construct Modelへ含めず、Frontendは本体のPython構文を正規化・検証しない。マジック関数は同期・引数なし・デコレータなし・単一定義とし、同名のクラス・async関数・直接代入、重複定義、引数つき/装飾つき定義を拒否する。PythonFrontend.parse単体でもこの定義を除外する。モデル化する通常部分は従来のFrontend受理条件に従い、特殊関数の除外はその他の型・名前解決の制約を緩和しない。
 
 title: Runtimeマジック関数の静的分離
+
+level: MUST
+
+## FRT_075
+
+Kind の語は `from pyinto.kinds.<公開面>.<段> import 語 [as 別名]` で import した名前だけを静的に認識する。公開面は `datatypes` / `memory` / `declarations`、段は `general` / `detailed` であり、各モジュールは決まった語だけを提供する。そのモジュールに属さない語、`import pyinto.kinds...` 形式、`pyinto.kinds` やその公開面からの import、組み込み型名との衝突、重複した別名は拒否する。型の位置では、`Wide[X]` / `Narrow[X]` / `Unsigned[X]` を `X`、`Size` / `Index` / `Byte` / `Int[N]` / `UInt[N]` / `CodeUnit[N]` / `Pointer[T]` / `Enum[T]` を `int`、`Float[N]` / `Decimal[N]` を `float`、`Char` を `str`、`Array[T, N]` と `Buffer[T]` を `list[T]`、`Function[[...], R]` を `Callable[[...], R]`、`Void` / `Nil` / `Null` を `None`、`Ref[T]` / `Owned[T]` / `Shared[T]` を `T` と同じ Python 側の形状として扱い、記述どおりのラベルを付ける。サイズと長さは正の整数リテラルだけを受理し、範囲は Host では決めない。引数の個数・種類が語の書式に合わない注釈は拒否する。
+
+title: Kindのimportと型注釈
+
+level: MUST
+
+## FRT_076
+
+値の位置の `Void` / `Nil` / `Null` は `NoneAlias` に正規化し、ラベルを持つ宣言・引数への代入と、ラベルを持つ値との `==` / `!=` 比較（`NoneAliasComparison`）にだけ使える。`Pointer.address(x)` は変数名そのものの引数だけを受理して `AddressOf`、`Pointer.load(p)` は `Pointer[T]` 型の値から `PointerLoad`、文としての `Pointer.store(p, v)` は `PointerStore` に正規化する。キーワード・展開引数、個数の誤り、未知の操作名、式の中の `Pointer.store` は拒否する。型の語彙を値として使うことも拒否する。
+
+title: None別名の値とポインタ操作の正規化
+
+level: MUST
+
+## FRT_077
+
+`Ref[T]` 型の変数の初期化子と、`Ref[T]` 型の仮引数へ渡す引数（既定値を含む）は、マップ済みオブジェクト以外の変数名そのもの（`Reference`）でなければならない。式やリテラルは拒否する。宣言後の代入は通常の代入規則に従い、`Ref` の書き込み・再束縛の意味は Target が決める。
+
+title: Ref型の束縛位置における変数名の要求
+
+level: MUST
+
+## FRT_078
+
+モジュールレベルのクラス定義では、登録済みのクラスデコレータ1個に加えて、`pyinto.kinds.declarations.detailed` の `@Interface` / `@MixIn` / `@Implements(...)` を任意の順で付けられる。`Interface` と `MixIn` は引数なし、`Implements` は同じモジュールでそれより前に定義したクラス名を1個以上とる。自身の名前、未定義・後方のクラス、キーワード引数、同じ語彙の重複、型の語彙のデコレータ使用は拒否する。これらはクラスの受理条件（明示的な `__init__`、単一継承等）を緩和しない。
+
+title: Kindのクラスデコレータ
+
+level: MUST
+
+## FRT_079
+
+Interface Mapping のマップ済みオブジェクトは `クラス.variant()` の引数なしの呼出でだけ生成する。位置引数・キーワード引数・展開引数は拒否し、数値の範囲やサイズをマップ済みオブジェクトの形状として受け取らない。登録するコンストラクタは `(Symbol) -> Construct` とする。
+
+title: マップ済みオブジェクトの引数なしコンストラクタ
+
+level: MUST
+
+## FRT_080
+
+`Memory.new(T, value)` / `Memory.new_buffer(T, length, value)` / `Memory.length(h)` / `Memory.borrow(h)` は値として、`Memory.release(h)` / `Memory.resize(h, length)` / `Memory.copy(destination, source)` / `Memory.fill(h, value)` は文として正規化する。`T` は型注釈と同じ規則で読む。`resize` の対象は変数名そのものでなければならない。値の型が合わない、所有のラベルや `Buffer` のラベルがない、長さが整数でない、引数の個数が違う、キーワード・展開引数、未知の操作名、式の中の文の操作、型としての `Memory` の使用は拒否する。`Memory.new` の結果は `Owned` のラベルを持つが、`Shared` として宣言した変数へも代入でき、所有の種類は宣言から読む。
+
+title: 動的メモリの操作の正規化
 
 level: MUST

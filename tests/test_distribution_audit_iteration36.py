@@ -33,7 +33,9 @@ def test_development_contracts_are_excluded_from_host_distribution() -> None:
     find = host["tool"]["setuptools"]["packages"]["find"]
     assert "pyinto.contracts" in find["exclude"]
     assert "pyinto.contracts.*" in find["exclude"]
-    assert (ROOT / "src" / "pyinto" / "contracts" / "port_contract.py").is_file()
+    assert (
+        ROOT / "src" / "pyinto" / "contracts" / "function_mapping_contract.py"
+    ).is_file()
     assert not (ROOT / "src" / "pyinto" / "targets").exists()
 
 
@@ -42,3 +44,16 @@ def test_surface_requires_explicit_realization_selection() -> None:
         parameter = inspect.signature(func).parameters["realizations"]
         assert parameter.default is inspect.Parameter.empty
         assert parameter.kind is inspect.Parameter.KEYWORD_ONLY
+
+
+def test_host_has_no_runtime_dependencies() -> None:
+    """Declarations are plain class attributes; the Host needs no third party."""
+    host = _project(ROOT / "pyproject.toml")
+    assert host["project"]["dependencies"] == []
+    distributed = ROOT / "src" / "pyinto"
+    for path in distributed.rglob("*.py"):
+        if "contracts" in path.relative_to(distributed).parts:
+            continue  # development-only fixtures excluded from the wheel
+        text = path.read_text(encoding="utf-8")
+        assert "import shikumi" not in text, path
+        assert "from shikumi" not in text, path

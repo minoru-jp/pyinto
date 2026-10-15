@@ -23,14 +23,14 @@
 1. `pyproject.toml` の `project.version` を公開予定バージョンにします。
    README、仕様・英語公開文書の同期と、すべてのCIチェックを完了します。
 2. 対象コミットに `v<project.version>` のタグを付けてpushします。
-   例: バージョン `0.1.0` なら `v0.1.0`。
+   例: バージョン `0.2.0` なら `v0.2.0`。
 3. `Release to PyPI` ワークフローが同じ品質ゲートを再実行します。
    いずれかのテスト・文書・ビルド検証、またはタグとバージョンの照合に
    失敗した場合、公開ジョブは実行されません。
 4. 必要なEnvironment承認の後、Trusted PublishingでPyPIへ提出します。
    公開ジョブはソースをチェックアウトせず再ビルドも行いません。
 
-`python scripts/verify_release.py v0.1.0` でタグとバージョンの照合を
+`python scripts/verify_release.py v0.2.0` でタグとバージョンの照合を
 ローカル確認できます。GitHub Actionsの実行とPyPI側の接続検証は、実際の
 GitHub/PyPI環境で初めて確定します。このリポジトリの変更だけでは
 Trusted Publisherの登録やPyPIへの公開は完了しません。

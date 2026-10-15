@@ -64,7 +64,7 @@ def lexical_captures(definition: FunctionDefinition) -> tuple[Symbol, ...]:
         if isinstance(item, FunctionCall):
             signature = item.signature
             if signature is not definition.signature:
-                # An unshaped Port function can still be directly called.
+                # An unshaped mapped function can still be directly called.
                 # Its declaration is already available through the signature.
                 try:
                     symbol = signature.value_symbol

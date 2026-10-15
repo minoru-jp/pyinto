@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import pytest
 
 from pyinto.constructs import (
@@ -11,7 +13,7 @@ from pyinto.constructs import (
     FunctionDefinition,
     FunctionSignature,
     Literal,
-    PortType,
+    MappedType,
     Symbol,
     TupleValue,
     ValueKind,
@@ -29,11 +31,6 @@ from pyinto.model import value_types as vt
 from pyinto.realizations import Composer, RealizationRegistry
 from pyinto.realizations.regulation import (
     realizes,
-    render,
-    separators,
-    template,
-    type_name,
-    variant,
 )
 
 
@@ -54,7 +51,7 @@ def test_full_recursive_value_type_passed_to_dynamic_spelling() -> None:
 
     @realizes(vt.List)
     class ListSpelling:
-        type_name @= spell_type
+        type_name = spell_type
 
     registry = RealizationRegistry("test", (ListSpelling,))
     inner = lst(basic(ValueKind.INTEGER))
@@ -77,19 +74,19 @@ def test_all_nested_type_shapes_and_nominal_types_reach_selector() -> None:
 
     @realizes(vt.Tuple)
     class TupleTypeSpelling:
-        type_name @= inspect
+        type_name = inspect
 
     @realizes(vt.Dictionary)
     class DictTypeSpelling:
-        type_name @= inspect
+        type_name = inspect
 
     @realizes(vt.Function)
     class CallableTypeSpelling:
-        type_name @= inspect
+        type_name = inspect
 
     @realizes(vt.Instance)
     class InstanceSpelling:
-        type_name @= inspect
+        type_name = inspect
 
     registry = RealizationRegistry(
         "test",
@@ -114,28 +111,28 @@ def test_all_nested_type_shapes_and_nominal_types_reach_selector() -> None:
     assert observed == [typed_tuple, typed_dict, typed_callable, nominal]
 
 
-def test_port_selector_still_receives_original_porttype() -> None:
-    port = PortType("demo.Device", "wide", (("size", 8),))
-    received: list[PortType] = []
+def test_mapped_selector_still_receives_original_mappedtype() -> None:
+    mapped = MappedType("demo.Device", "wide")
+    received: list[MappedType] = []
 
-    def spell(shape: PortType, recurse: object) -> str:
+    def spell(shape: MappedType, recurse: object) -> str:
         received.append(shape)
         return "device_handle"
 
-    @realizes(port)
-    class PortSpelling:
-        type_name @= spell
+    @realizes(mapped)
+    class MappedSpelling:
+        type_name = spell
 
-    registry = RealizationRegistry("test", (PortSpelling,))
-    assert registry.type_name(Symbol("device", port, "Device")) == "device_handle"
-    assert registry.type_name(port) == "device_handle"
-    assert received == [port, port]
+    registry = RealizationRegistry("test", (MappedSpelling,))
+    assert registry.type_name(Symbol("device", mapped, "Device")) == "device_handle"
+    assert registry.type_name(mapped) == "device_handle"
+    assert received == [mapped, mapped]
 
 
 def test_type_selector_rejects_unsupported_shape_and_invalid_output() -> None:
     @realizes(vt.List)
     class NoName:
-        type_name @= lambda shape, spell: ""
+        type_name = lambda shape, spell: ""
 
     registry = RealizationRegistry("test", (NoName,))
     with pytest.raises(ConstructError, match="nonempty"):
@@ -149,11 +146,11 @@ def test_type_selector_rejects_unsupported_shape_and_invalid_output() -> None:
 def test_field_type_slot_uses_full_value_type() -> None:
     @realizes(vt.List)
     class ListSpelling:
-        type_name @= lambda shape, spell: shape.annotation()
+        type_name = lambda shape, spell: shape.annotation()
 
     @realizes(lang.FieldDefinition)
     class FieldSpelling:
-        template @= "${type} ${name};"
+        template = "${type} ${name};"
 
     registry = RealizationRegistry("test", (ListSpelling, FieldSpelling))
     field = FieldDefinition("items", lst(basic(ValueKind.INTEGER)))
@@ -164,24 +161,24 @@ def test_field_type_slot_uses_full_value_type() -> None:
 def test_function_return_type_and_parameter_separator() -> None:
     @realizes(vt.List)
     class ListSpelling:
-        type_name @= lambda shape, spell: shape.annotation()
+        type_name = lambda shape, spell: shape.annotation()
 
     @realizes(vt.Integer)
     class IntSpelling:
-        type_name @= "int"
+        type_name = "int"
 
     @realizes(lang.FunctionDefinition)
     class Func:
-        separators @= {"parameters": ", "}
-        template @= "${return_type} ${name}(${parameters}) {${body}}"
+        separators: ClassVar[dict[str, str]] = {"parameters": ", "}
+        template = "${return_type} ${name}(${parameters}) {${body}}"
 
     @realizes(lang.Parameter)
     class Param:
-        template @= "${type} ${name}"
+        template = "${type} ${name}"
 
     @realizes(lang.Block)
     class Body:
-        template @= "${children}"
+        template = "${children}"
 
     registry = RealizationRegistry(
         "test", (ListSpelling, IntSpelling, Func, Param, Body)
@@ -206,17 +203,17 @@ def test_function_return_type_and_parameter_separator() -> None:
 def test_list_slot_separator_default_unchanged_and_explicit_comma() -> None:
     @realizes(lang.Literal)
     class IntLit:
-        variant @= "integer"
-        render @= lambda node, ctx: str(node.value)
+        variant = "integer"
+        render = lambda node, ctx: str(node.value)
 
     @realizes(lang.TupleValue)
     class DefaultTuple:
-        template @= "${items}"
+        template = "${items}"
 
     @realizes(lang.TupleValue)
     class CommaTuple:
-        template @= "(${items})"
-        separators @= {"items": ", "}
+        template = "(${items})"
+        separators: ClassVar[dict[str, str]] = {"items": ", "}
 
     data = TupleValue((Literal(1), Literal(2)))
     assert (
@@ -237,24 +234,24 @@ def test_list_slot_separator_default_unchanged_and_explicit_comma() -> None:
 def test_separators_reject_unknown_unused_nontuple_and_wrong_role() -> None:
     @realizes(lang.TupleValue)
     class UnknownSlot:
-        separators @= {"missing": ", "}
-        template @= "${items}"
+        separators: ClassVar[dict[str, str]] = {"missing": ", "}
+        template = "${items}"
 
     with pytest.raises(ValueError, match="separators"):
         RealizationRegistry("t", (UnknownSlot,))
 
     @realizes(lang.TupleValue)
     class UnusedSlot:
-        separators @= {"items": ", "}
-        template @= "ok"
+        separators: ClassVar[dict[str, str]] = {"items": ", "}
+        template = "ok"
 
     with pytest.raises(ValueError, match="separators"):
         RealizationRegistry("t", (UnusedSlot,))
 
     @realizes(lang.FieldDefinition)
     class WrongSlotType:
-        separators @= {"type": ", "}
-        template @= "${type}"
+        separators: ClassVar[dict[str, str]] = {"type": ", "}
+        template = "${type}"
 
     registry = RealizationRegistry("t", (WrongSlotType,))
     with pytest.raises(ConstructError, match="separator requires a tuple"):
@@ -262,8 +259,8 @@ def test_separators_reject_unknown_unused_nontuple_and_wrong_role() -> None:
 
     @realizes(vt.Integer)
     class WrongRole:
-        separators @= {"anything": ", "}
-        type_name @= "int"
+        separators: ClassVar[dict[str, str]] = {"anything": ", "}
+        type_name = "int"
 
     with pytest.raises(ValueError, match="separators"):
         RealizationRegistry("t", (WrongRole,))
@@ -272,16 +269,16 @@ def test_separators_reject_unknown_unused_nontuple_and_wrong_role() -> None:
 def test_separator_malformed_and_not_used_by_dynamic_renderer() -> None:
     @realizes(lang.TupleValue)
     class BadValue:
-        separators @= {"items": 123}
-        template @= "${items}"
+        separators: ClassVar[dict[str, str]] = {"items": 123}
+        template = "${items}"
 
     with pytest.raises(ValueError, match="separators"):
         RealizationRegistry("t", (BadValue,))
 
     @realizes(lang.TupleValue)
     class DynamicNoSlot:
-        separators @= {"items": ", "}
-        render @= lambda node, ctx: "none"
+        separators: ClassVar[dict[str, str]] = {"items": ", "}
+        render = lambda node, ctx: "none"
 
     with pytest.raises(ConstructError, match="unused Slots"):
         Composer(RealizationRegistry("t", (DynamicNoSlot,))).source(TupleValue(()))

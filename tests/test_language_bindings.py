@@ -23,24 +23,19 @@ from pyinto.constructs import (
     While,
 )
 from pyinto.constructs.admission import LANGUAGE_ADMISSION
+from pyinto.contracts.boundaries.pipeline import CompositionBoundary
 from pyinto.contracts.construct_contract import ConstructContract
-from pyinto.contracts.ports.pipeline import CompositionPort
 from pyinto.interfaces import builtins as builtin
 from pyinto.realizations import Composer, RealizationRegistry
 from pyinto.realizations.layout import Template, Text
 from pyinto.realizations.layout import render as render_layout
 from pyinto.realizations.regulation import (
-    pack_entries,
-    pack_target,
     realizes,
-    render,
-    template,
-    variant,
 )
 from tests.support.c_realizer import C_DECLARATIONS, CTargetPack, c_bindings
 
 
-@contract_binds[CompositionPort](Composer)
+@contract_binds[CompositionBoundary](Composer)
 @upholds(ConstructContract.LateComposition)
 def test_nested_layout_is_not_flattened_before_rendering() -> None:
     program = PythonFrontend().parse('n: int = 1\nif n > 0:\n    print("ok")')
@@ -55,22 +50,22 @@ def test_nested_layout_is_not_flattened_before_rendering() -> None:
     assert 'puts("ok")' in render_layout(tree, composer.context)
 
 
-@contract_binds[CompositionPort](Composer)
+@contract_binds[CompositionBoundary](Composer)
 @upholds(ConstructContract.BindingValidation)
 def test_unknown_hole_fails_pack_validation() -> None:
     @realizes(Branch)
     class BadBranch:
-        template @= "if (${mystery}) {}"
+        template = "if (${mystery}) {}"
 
     with pytest.raises(ValueError, match="unknown template hole"):
         RealizationRegistry("c", (BadBranch,))
 
 
-@contract_binds[CompositionPort](Composer)
+@contract_binds[CompositionBoundary](Composer)
 @upholds(ConstructContract.BindingValidation)
 def test_pack_validates_duplicate_and_ambiguous_recipes() -> None:
     class Empty:
-        template @= "text"
+        template = "text"
 
     with pytest.raises(ValueError, match="exactly one role"):
         RealizationRegistry("c", (Empty,))
@@ -79,28 +74,28 @@ def test_pack_validates_duplicate_and_ambiguous_recipes() -> None:
 
     @realizes(Branch)
     class Bad:
-        template @= "ok"
-        render @= lambda node, ctx: "extra"
+        template = "ok"
+        render = lambda node, ctx: "extra"
 
     with pytest.raises(ValueError, match="exactly one template or renderer"):
         RealizationRegistry("c", (Bad,))
 
 
-@contract_binds[CompositionPort](Composer)
+@contract_binds[CompositionBoundary](Composer)
 @upholds(ConstructContract.TargetIsolation)
 def test_replace_pack_without_touching_normalization() -> None:
     @realizes(Literal)
     class AlternateStringLiteral:
-        variant @= "string"
-        render @= lambda node, context: Text('"other"')
+        variant = "string"
+        render = lambda node, context: Text('"other"')
 
-    entries = tuple(x for x in C_DECLARATIONS if x.__name__ != "CStringLiteral") + (
+    selected = tuple(x for x in C_DECLARATIONS if x.__name__ != "CStringLiteral") + (
         AlternateStringLiteral,
     )
 
     class Target:
-        pack_target @= "c"
-        pack_entries @= entries
+        target = "c"
+        entries = selected
 
     program = PythonFrontend().parse('print("original")')
     assert 'puts("original");' in realize(program, realizations=c_bindings())
@@ -111,14 +106,14 @@ def test_replace_pack_without_touching_normalization() -> None:
 
 def test_invalid_pack_and_call_slots_fail() -> None:
     class Missing:
-        pack_target @= "c"
+        target = "c"
 
     with pytest.raises(ValueError, match="Pack missing entries"):
         RealizationRegistry.from_pack(Missing)
 
     @realizes(builtin.PrintCall)
     class BadCall:
-        template @= "some(${unknown})"
+        template = "some(${unknown})"
 
     with pytest.raises(ValueError, match="Invalid call hole"):
         RealizationRegistry("c", (BadCall,))
@@ -153,7 +148,7 @@ def test_while_else_requires_an_explicit_binding_variant() -> None:
 def test_while_uses_shikumi_slot_validation() -> None:
     @realizes(While)
     class BadWhile:
-        template @= "while (${not_a_condition}) { ${body} }"
+        template = "while (${not_a_condition}) { ${body} }"
 
     with pytest.raises(ValueError, match="unknown template hole"):
         RealizationRegistry("c", (BadWhile,))
@@ -175,7 +170,7 @@ def test_selector_is_pure_template_choice_not_output() -> None:
 
     @realizes(Outer)
     class OuterBinding:
-        render @= lambda node, ctx: "/*start*/\n${inner}\n/*end*/"
+        render = lambda node, ctx: "/*start*/\n${inner}\n/*end*/"
 
     pack = RealizationRegistry("c", (*C_DECLARATIONS, OuterBinding))
     program = Program(
@@ -196,7 +191,7 @@ def test_callback_must_produce_a_template_string() -> None:
 
     @realizes(Node)
     class Invalid:
-        render @= lambda node, ctx: 123
+        render = lambda node, ctx: 123
 
     registry = RealizationRegistry("c", (*C_DECLARATIONS, Invalid))
     with pytest.raises(ConstructError, match="template text"):
@@ -259,7 +254,7 @@ def test_literal_template_marker_is_never_interpreted_as_a_slot(tmp_path) -> Non
 def test_leaf_literal_binding_may_not_silently_discard_children() -> None:
     @realizes(Branch)
     class BadBranch:
-        render @= lambda node, context: Text("not a branch")
+        render = lambda node, context: Text("not a branch")
 
     registry = RealizationRegistry(
         "c",

@@ -18,6 +18,7 @@ from pyinto.constructs import (
     FunctionValueCall,
     InstanceCreation,
     InstanceType,
+    KindLabel,
     MethodCall,
     MethodDispatch,
     MethodKind,
@@ -28,6 +29,8 @@ from pyinto.constructs import (
     ValueKind,
     ValueType,
 )
+from pyinto.constructs.kinds import class_label
+from pyinto.constructs.types import CLASS_LABELS
 
 from .context import ParseContext
 from .decorators import ClassDecorationPlan, DecoratorRegistry
@@ -106,6 +109,7 @@ class ClassNormalizer:
                 or node.name in self._context.names.callable_aliases
                 or node.name in self._context.names.module_aliases
                 or node.name in self._context.names.interface_aliases
+                or node.name in self._context.names.kind_aliases
                 or node.name in self._decorators.imported_names
             ):
                 raise self._reject(node, "Duplicate or reserved class name")
@@ -140,13 +144,14 @@ class ClassNormalizer:
         cached = self._context.classes.class_decorations.get(node)
         if cached is not None:
             return cached
-        if not node.decorator_list:
+        decorators = self._kind_class_labels(node)
+        if not decorators:
             plan = ClassDecorationPlan()
             self._context.classes.class_decorations[node] = plan
             return plan
-        if len(node.decorator_list) != 1:
+        if len(decorators) != 1:
             raise self._reject(node, "Only one registered class decorator is supported")
-        decorator = node.decorator_list[0]
+        decorator = decorators[0]
         rule = (
             self._decorators.lookup(
                 decorator.id,
@@ -167,6 +172,58 @@ class ClassNormalizer:
             raise self._reject(node, str(exc)) from exc
         self._context.classes.class_decorations[node] = plan
         return plan
+
+    def _kind_class_labels(self, node: ast.ClassDef) -> list[ast.expr]:
+        """Record @Interface / @MixIn / @Implements; return other decorators.
+
+        These vocabulary words carry no Host meaning. Implements may name only
+        classes declared earlier in the module.
+        """
+        aliases = self._context.names.kind_aliases
+        labels: list[KindLabel] = []
+        remaining: list[ast.expr] = []
+        for decorator in node.decorator_list:
+            call = decorator if isinstance(decorator, ast.Call) else None
+            head = call.func if call is not None else decorator
+            word = aliases.get(head.id) if isinstance(head, ast.Name) else None
+            if word is None:
+                remaining.append(decorator)
+                continue
+            if word not in CLASS_LABELS:
+                raise self._reject(decorator, f"{word} is not a class decorator")
+            if (word == "Implements") != (call is not None):
+                raise self._reject(
+                    decorator,
+                    "Implements requires class arguments"
+                    if word == "Implements"
+                    else f"{word} takes no arguments",
+                )
+            implemented: list[InstanceType] = []
+            if call is not None:
+                if call.keywords or not call.args:
+                    raise self._reject(
+                        decorator, "Implements requires one or more classes"
+                    )
+                for argument in call.args:
+                    if (
+                        not isinstance(argument, ast.Name)
+                        or argument.id not in self._context.classes.class_types
+                        or argument.id == node.name
+                    ):
+                        raise self._reject(
+                            argument,
+                            "Implements requires classes declared earlier in the module",
+                        )
+                    implemented.append(self._context.classes.class_types[argument.id])
+            try:
+                labels.append(class_label(word, tuple(implemented)))
+            except ValueError as exc:
+                raise self._reject(decorator, str(exc)) from exc
+        if len({label.name for label in labels}) != len(labels):
+            raise self._reject(node, "Duplicate kind class decorator")
+        # Python applies decorators bottom-up; record them in source order.
+        self._context.classes.class_labels[node] = tuple(labels)
+        return remaining
 
     def _method_kind(self, node: ast.FunctionDef) -> MethodKind:
         if not node.decorator_list:
@@ -349,7 +406,12 @@ class ClassNormalizer:
             methods = tuple(
                 self._services._function_definition(stmt) for stmt in methods_ast
             )
-            return ClassDefinition(signature, methods, docstring)
+            return ClassDefinition(
+                signature,
+                methods,
+                docstring,
+                self._context.classes.class_labels.get(node, ()),
+            )
         except ValueError as exc:
             if isinstance(exc, UnsupportedPython):
                 raise

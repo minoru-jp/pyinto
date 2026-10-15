@@ -25,7 +25,7 @@ from pyinto.constructs import (
 from pyinto.constructs.admission import required_contracts
 from pyinto.frontend import PythonFrontend, UnsupportedPython
 from pyinto.realizations.registry import EmitContext, RealizationRegistry
-from pyinto.realizations.regulation import realizes, requires, supports, template
+from pyinto.realizations.regulation import realizes
 from tests.support.python_realizer.pack import python_bindings
 
 
@@ -217,8 +217,8 @@ def test_admission_rejects_before_recipe_side_effects(kind: str) -> None:
 
     @realizes(type(node))
     class Unsafe:
-        requires @= "should-not-be-added.h"
-        template @= "unsafe"
+        requires = ("should-not-be-added.h",)
+        template = "unsafe"
 
     registry = RealizationRegistry("test", (Unsafe,))
     context = EmitContext(registry)
@@ -237,8 +237,8 @@ def test_rebinding_admission_is_explicit_and_never_inherited() -> None:
 
     @realizes(AugAssign)
     class Partial:
-        template @= "${target} += ${value}"
-        supports @= ("assignment.augmented.target_once",)
+        template = "${target} += ${value}"
+        supports = ("assignment.augmented.target_once",)
 
     registry = RealizationRegistry("test", (Partial,))
     with pytest.raises(ConstructError, match="assignment.augmented"):

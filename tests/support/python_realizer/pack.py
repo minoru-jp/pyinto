@@ -17,120 +17,111 @@ from pyinto.realizations.layout import Text
 from pyinto.realizations.registry import RealizationRegistry, TextArtifactSession
 from pyinto.realizations.regulation import (
     naming,
-    pack_dispatch,
-    pack_entries,
-    pack_session,
-    pack_target,
     realizes,
-    render,
-    reserved,
-    supports,
-    template,
-    variant,
 )
 
 
 @realizes(lang.Program)
 class PythonProgram:
-    template @= "${body}"
+    template = "${body}"
 
 
 @realizes(lang.Block)
 class PythonBlock:
-    render @= lambda node, ctx: "${children}" if node.children else "pass"
+    render = lambda node, ctx: "${children}" if node.children else "pass"
 
 
 @realizes(lang.Initialize)
 class PythonInitialize:
-    template @= "${name} = ${value}"
+    template = "${name} = ${value}"
 
 
 @realizes(lang.Assign)
 class PythonAssign:
-    template @= "${target} = ${value}"
+    template = "${target} = ${value}"
 
 
 @realizes(lang.ExpressionStatement)
 class PythonExpressionStatement:
-    template @= "${expression}"
+    template = "${expression}"
 
 
 @realizes(lang.Comparison)
 class PythonComparison:
-    supports @= ("evaluation.operands.left_to_right",)
-    template @= "(${left} ${op} ${right})"
+    supports = ("evaluation.operands.left_to_right",)
+    template = "(${left} ${op} ${right})"
 
 
 @realizes(lang.Reference)
 class PythonReference:
-    template @= "${name}"
+    template = "${name}"
 
 
 @realizes(lang.Branch)
 class PythonBranch:
-    template @= "if ${condition}:\n    ${then}"
+    template = "if ${condition}:\n    ${then}"
 
 
 @realizes(lang.Branch)
 class PythonBranchWithElse:
-    variant @= "with_else"
-    template @= "if ${condition}:\n    ${then}\nelse:\n    ${otherwise}"
+    variant = "with_else"
+    template = "if ${condition}:\n    ${then}\nelse:\n    ${otherwise}"
 
 
 @realizes(lang.While)
 class PythonWhile:
-    template @= "while ${condition}:\n    ${body}"
+    template = "while ${condition}:\n    ${body}"
 
 
 @realizes(lang.While)
 class PythonWhileWithElse:
-    variant @= "with_else"
-    template @= "while ${condition}:\n    ${body}\nelse:\n    ${otherwise}"
+    variant = "with_else"
+    template = "while ${condition}:\n    ${body}\nelse:\n    ${otherwise}"
 
 
 @realizes(lang.Break)
 class PythonBreak:
-    template @= "break"
+    template = "break"
 
 
 @realizes(lang.Continue)
 class PythonContinue:
-    template @= "continue"
+    template = "continue"
 
 
 @realizes(builtin.Range)
 class PythonRangeOne:
-    variant @= "1"
-    template @= "range(${arg0})"
+    variant = "1"
+    template = "range(${arg0})"
 
 
 @realizes(builtin.Range)
 class PythonRangeTwo:
-    variant @= "2"
-    template @= "range(${arg0}, ${arg1})"
+    variant = "2"
+    template = "range(${arg0}, ${arg1})"
 
 
 @realizes(builtin.Range)
 class PythonRangeThree:
-    variant @= "3"
-    template @= "range(${arg0}, ${arg1}, ${arg2})"
+    variant = "3"
+    template = "range(${arg0}, ${arg1}, ${arg2})"
 
 
 @realizes(lang.IterationEntry)
 class PythonIteration:
-    supports @= (
+    supports = (
         "iteration.source.range",
         "iteration.source.string",
         "iteration.source.list",
         "iteration.source.tuple",
         "iteration.source.iterable",
     )
-    template @= "${target} in ${iterable}"
+    template = "${target} in ${iterable}"
 
 
 @realizes(lang.For)
 class PythonFor:
-    supports @= (
+    supports = (
         "iteration.source.range",
         "iteration.source.string",
         "iteration.source.list",
@@ -138,12 +129,12 @@ class PythonFor:
         "iteration.source.iterable",
         "loop.for.break_continue",
     )
-    template @= "for ${entry}:\n    ${body}"
+    template = "for ${entry}:\n    ${body}"
 
 
 @realizes(lang.For)
 class PythonForWithElse:
-    supports @= (
+    supports = (
         "iteration.source.range",
         "iteration.source.string",
         "iteration.source.list",
@@ -152,19 +143,19 @@ class PythonForWithElse:
         "loop.for.break_continue",
         "loop.for.normal_completion_else",
     )
-    variant @= "with_else"
-    template @= "for ${entry}:\n    ${body}\nelse:\n    ${otherwise}"
+    variant = "with_else"
+    template = "for ${entry}:\n    ${body}\nelse:\n    ${otherwise}"
 
 
 @realizes(lang.ContextEntry)
 class PythonContextEntry:
-    template @= "${context}"
+    template = "${context}"
 
 
 @realizes(lang.ContextEntry)
 class PythonContextEntryWithTarget:
-    variant @= "with_target"
-    template @= "${context} as ${target}"
+    variant = "with_target"
+    template = "${context} as ${target}"
 
 
 def _python_with(node: With, context: object) -> str:
@@ -174,30 +165,30 @@ def _python_with(node: With, context: object) -> str:
 
 @realizes(lang.With)
 class PythonWith:
-    supports @= ("context.with.enter_exit_exception",)
-    render @= _python_with
+    supports = ("context.with.enter_exit_exception",)
+    render = _python_with
 
 
 @realizes(lang.Literal)
 class PythonIntegerLiteral:
-    variant @= "integer"
-    render @= lambda node, context: Text(repr(node.value))
+    variant = "integer"
+    render = lambda node, context: Text(repr(node.value))
 
 
 @realizes(lang.Literal)
 class PythonStringLiteral:
-    variant @= "string"
-    render @= lambda node, context: Text(repr(node.value))
+    variant = "string"
+    render = lambda node, context: Text(repr(node.value))
 
 
 @naming
 class PythonNames:
-    reserved @= frozenset(keyword.kwlist)
+    reserved = frozenset(keyword.kwlist)
 
 
 @realizes(builtin.PrintCall)
 class PythonPrint:
-    template @= "print(${arg0})"
+    template = "print(${arg0})"
 
 
 PYTHON_DECLARATIONS = (
@@ -231,10 +222,10 @@ PYTHON_DECLARATIONS = (
 
 
 class PythonTargetPack:
-    pack_target @= "python"
-    pack_entries @= PYTHON_DECLARATIONS
-    pack_dispatch @= "composition"
-    pack_session @= TextArtifactSession
+    target = "python"
+    entries = PYTHON_DECLARATIONS
+    dispatch = "composition"
+    session = TextArtifactSession
 
 
 @lru_cache(maxsize=1)

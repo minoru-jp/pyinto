@@ -50,8 +50,8 @@ def test_cst_020_callable_type_is_recursive_structural_data() -> None:
         ValueType(ValueKind.INTEGER, inner)
     with pytest.raises(ConstructError, match="Callable parameters"):
         CallableType((unit,), integer)
-    with pytest.raises(ConstructError, match="Port"):
-        ValueType(ValueKind.PORT_OBJECT)
+    with pytest.raises(ConstructError, match="mapped"):
+        ValueType(ValueKind.MAPPED_OBJECT)
     with pytest.raises(ConstructError, match="Callable return"):
         CallableType((), "bad")  # type: ignore[arg-type]
 

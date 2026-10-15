@@ -28,8 +28,8 @@ from pyinto.constructs import (
     ValueType,
     While,
 )
+from pyinto.contracts.boundaries.pipeline import CompositionBoundary, FrontendBoundary
 from pyinto.contracts.construct_contract import ConstructContract, FrontendContract
-from pyinto.contracts.ports.pipeline import CompositionPort, FrontendPort
 from pyinto.realizations import Composer
 from tests.support.c_realizer import c_bindings
 from tests.support.python_realizer.pack import python_bindings
@@ -72,7 +72,7 @@ def contains_ast(obj: object) -> bool:
     return False
 
 
-@binds[FrontendPort](PythonFrontend)
+@binds[FrontendBoundary](PythonFrontend)
 class TestFrontend:
     @upholds(FrontendContract.parse.TypedNames)
     @pytest.mark.parametrize(
@@ -158,7 +158,7 @@ class TestFrontend:
         assert not contains_ast(program)
 
 
-@binds[CompositionPort](Composer)
+@binds[CompositionBoundary](Composer)
 class TestProgram:
     @upholds(ConstructContract.source.Compiles)
     @pytest.mark.parametrize(

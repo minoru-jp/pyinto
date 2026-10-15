@@ -263,7 +263,7 @@ class FunctionNormalizer:
                 _, element_type = self._services._annotation(arg.annotation)
                 if element_type is None or element_type.kind in {
                     ValueKind.NONE,
-                    ValueKind.PORT_OBJECT,
+                    ValueKind.MAPPED_OBJECT,
                 }:
                     raise self._reject(
                         arg, "Unsupported variadic parameter element type"
@@ -768,7 +768,7 @@ class FunctionNormalizer:
                         node.body, "None-returning lambda must yield None"
                     )
             elif shape.return_type.kind not in {ValueKind.ANY, ValueKind.OBJECT} and (
-                body_value.kind is ValueKind.PORT_OBJECT
+                body_value.kind is ValueKind.MAPPED_OBJECT
                 or not assignable(shape.return_type, body_value.value_type)
             ):
                 raise self._reject(

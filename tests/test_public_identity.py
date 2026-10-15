@@ -49,13 +49,17 @@ def test_current_architecture_glossary_and_readme() -> None:
         "Language Construct",
         "Python Source Adapter",
         "Interface Mapping",
-        "Target Implementation",
+        "Realizer",
+        "Target Pack",
+        "Source",
+        "Artifact",
         "Language Implementation",
         "Interface Implementation",
         "Bundle",
     ):
         assert f"## {term}\n" in glossary
     assert "## Target Cartridge\n" not in glossary
+    assert "## Target Implementation\n" not in glossary
     assert "## taiou\n" not in glossary
 
     readme = (documents / "README.md").read_text(encoding="utf-8")
@@ -63,14 +67,15 @@ def test_current_architecture_glossary_and_readme() -> None:
         "# pyinto\n",
         "pyinto Host",
         "Construct Model",
-        "Target Implementation",
+        "Source ──(Host)──▶ Model ──(Realizer)──▶ Artifact",
+        "Realizer Guide",
         "pip install pyinto",
         "__pyinto_runtime__",
     ):
         assert concept in readme
     for guide in (
         "](STATUS.md)",
-        "](target_implementation/INDEX.md)",
+        "](realizer/INDEX.md)",
         "](specification/INDEX.md)",
     ):
         assert guide in readme

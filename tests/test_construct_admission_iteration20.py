@@ -13,7 +13,7 @@ from pyinto.constructs import Block, Construct, Literal, Program
 from pyinto.constructs.admission import LANGUAGE_ADMISSION
 from pyinto.interface_mapping import InterfaceFunctionMapping, InterfaceMappingRegistry
 from pyinto.realizations import Composer, EmitContext, RealizationRegistry
-from pyinto.realizations.regulation import realizes, requires, supports, template
+from pyinto.realizations.regulation import realizes
 from tests.test_realization_boundary_audit_iteration14 import _construct_types
 
 
@@ -34,14 +34,14 @@ OUTSIDE_RULE = AdmissionRule(
 
 @realizes(_Outside)
 class _Unsupported:
-    template @= "external()"
-    requires @= "danger.h"
+    template = "external()"
+    requires = ("danger.h",)
 
 
 @realizes(_Outside)
 class _Supported:
-    template @= "external()"
-    supports @= ("outside.mode.strict",)
+    template = "external()"
+    supports = ("outside.mode.strict",)
 
 
 def _provided() -> AdmissionRegistry:
@@ -117,11 +117,11 @@ def test_explicit_empty_policy_distinct_from_omitted_policy() -> None:
 def test_unregistered_child_is_rejected_even_if_parent_template_omits_it() -> None:
     @realizes(Program)
     class _Program:
-        template @= "${body}"
+        template = "${body}"
 
     @realizes(Block)
     class _Block:
-        template @= "ignored"
+        template = "ignored"
 
     binding = RealizationRegistry("demo", (_Program, _Block, _Supported))
     with pytest.raises(
@@ -170,7 +170,7 @@ def test_baseline_admission_accepts_extensions_but_rejects_replacement() -> None
         replacement.require_baseline(LANGUAGE_ADMISSION)
 
 
-def test_port_provider_contracts_are_independent_of_target_packs() -> None:
+def test_mapping_provider_contracts_are_independent_of_target_packs() -> None:
     definition = InterfaceFunctionMapping(
         "example.ext.operation", (), lambda args: _Outside()
     )
@@ -180,12 +180,12 @@ def test_port_provider_contracts_are_independent_of_target_packs() -> None:
     )
 
     @realizes(_Outside)
-    class _PortBased:
-        template @= "external()"
-        supports @= ("outside.mode.strict",)
+    class _MappingBased:
+        template = "external()"
+        supports = ("outside.mode.strict",)
 
-    bindings = RealizationRegistry("demo", (_PortBased,))
-    # Registered extension is admitted via the Port provider, while the same
+    bindings = RealizationRegistry("demo", (_MappingBased,))
+    # Registered extension is admitted via the Interface Mapping provider, while the same
     # Target recipe alone cannot declare the Model's semantic requirements.
     with pytest.raises(ConstructError, match="Unregistered Construct admission"):
         realize(_Outside(), realizations=bindings)
@@ -197,11 +197,11 @@ def test_port_provider_contracts_are_independent_of_target_packs() -> None:
     )
 
 
-def test_convert_passes_port_provider_admission_through_normalization() -> None:
-    from demo_ports_pyinto import c_device_bindings, interface_mapping_registry
+def test_convert_passes_mapping_provider_admission_through_normalization() -> None:
+    from demo_device_pyinto import c_device_bindings, interface_mapping_registry
 
     text = convert(
-        "from demo_ports.device import is_ready\nif is_ready():\n    print('ok')\n",
+        "from demo_device.device import is_ready\nif is_ready():\n    print('ok')\n",
         interface_mappings=interface_mapping_registry(),
         realizations=c_device_bindings(),
     )

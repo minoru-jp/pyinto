@@ -15,8 +15,8 @@ from pyinto.constructs import (
     Construct,
     FloatingLiteral,
     Literal,
+    MappedType,
     NoneLiteral,
-    PortType,
     Reference,
     Symbol,
     Value,
@@ -66,25 +66,14 @@ class InterfaceMappingNormalizer:
         factory = definition.constructors.get(node.func.attr)
         if factory is None:
             raise reject(node, "Unregistered interface mapping object constructor")
-        if node.args or any(key.arg is None for key in node.keywords):
+        if node.args or node.keywords:
             raise reject(
-                node, "interface mapping object constructors accept keywords only"
+                node, "interface mapping object constructors take no arguments"
             )
-        options: dict[str, int] = {}
-        for item in node.keywords:
-            assert item.arg is not None
-            if item.arg in options:
-                raise reject(item, "Duplicate interface mapping constructor keyword")
-            literal = self._value(item.value)
-            if not isinstance(literal, Literal) or type(literal.value) is not int:
-                raise reject(
-                    item, "interface mapping constraints must be integer literals"
-                )
-            options[item.arg] = literal.value
-        shape = PortType(source, node.func.attr, tuple(sorted(options.items())))
+        shape = MappedType(source, node.func.attr)
         symbol = Symbol(name, shape, annotation, scope=self._declaration_scope())
         try:
-            construct = factory(symbol, options)
+            construct = factory(symbol)
         except (TypeError, ValueError) as exc:
             raise reject(
                 node, f"Invalid interface mapping object declaration: {exc}"

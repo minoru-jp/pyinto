@@ -6,7 +6,7 @@ The Japanese [canonical Composition document](../../devdocs/canonical_documents/
 
 ## CMP_001
 
-The current `RealizationRegistry` validates Shikumi declarations and resolves a matching recipe using the **exact Construct type** together with `variant()`, or the registered name of a Call. The `@realizes(element)` declaration with a public element uses the same resolution path. Supported declaration targets comprise Construct classes, direct Calls to `builtin.PrintCall`, and type spellings for `ValueKind` / `PortType`. `PrintCall` and `PrintValues` are distinct targets. Direct-Call handling is **not** implemented for every builtin operation. A declaration class must have either `@realizes(element)` or `@naming`, but not both. Unregistered targets and duplicate registrations for the same target are rejected. Invalid rules, such as unregistered or invalid public elements and duplicates, must be rejected rather than repaired by implicit NOOP implementations.
+The current `RealizationRegistry` validates declarations written as plain class attributes and resolves a matching recipe using the **exact Construct type** together with `variant()`, or the registered name of a Call. The `@realizes(element)` declaration with a public element uses the same resolution path. Supported declaration targets comprise Construct classes, direct Calls to `builtin.PrintCall`, and type spellings for `ValueKind` / `MappedType`. `PrintCall` and `PrintValues` are distinct targets. Direct-Call handling is **not** implemented for every builtin operation. A declaration class must have either `@realizes(element)` or `@naming`, but not both. Unregistered targets and duplicate registrations for the same target are rejected. Invalid rules, such as unregistered or invalid public elements and duplicates, must be rejected rather than repaired by implicit NOOP implementations.
 
 title: Declaration validation and Realization rule resolution
 
@@ -64,7 +64,7 @@ level: INFORMATIVE
 
 ## CMP_008
 
-The Composer mechanically converts Model-origin `Identifier` parts into name-validated Target Layouts; a `Symbol`'s `type` and full `ValueType` / `PortType` into type-spelling Layouts **without discarding type information**; and ordered Construct `tuple` parts into Joined Layouts. Type Layouts must retain details of nested element types, return types, and nominal types. `requirements` is satisfied on the Realization side as an output-only reserved Slot, not as part of the `Program` Model structure.
+The Composer mechanically converts Model-origin `Identifier` parts into name-validated Target Layouts; a `Symbol`'s `type` and full `ValueType` / `MappedType` into type-spelling Layouts **without discarding type information**; and ordered Construct `tuple` parts into Joined Layouts. Type Layouts must retain details of nested element types, return types, and nominal types. `requirements` is satisfied on the Realization side as an output-only reserved Slot, not as part of the `Program` Model structure.
 
 title: Boundary conversion from Model parts to Layout
 
@@ -88,7 +88,7 @@ level: MUST
 
 ## CMP_011
 
-`requirements` is a Composition-owned reserved Slot usable in output **only for `Program`**. Shikumi declaration validation accepts that name only in `Program` Templates. Static Templates for other Constructs that use it, or that use any undefined Slot, are rejected.
+`requirements` is a Composition-owned reserved Slot usable in output **only for `Program`**. Declaration validation accepts that name only in `Program` Templates. Static Templates for other Constructs that use it, or that use any undefined Slot, are rejected.
 
 title: Static validation of the Program-only output Slot
 
@@ -156,7 +156,7 @@ related: [CST_001](construct.md#cst_001)
 
 For the five bound direct-Call forms, correctness of formal-parameter binding (`call.arguments.bound`) and evaluation order of actual arguments explicitly supplied by the caller are **separate contracts**. If at least two explicit arguments occur, `call.arguments.left_to_right` is required **whether or not** their order differs from formal-parameter order. Only when source evaluation order differs from ascending formal-parameter order is the additional `call.arguments.reordered` contract required. Omitted arguments supplied from defaults are **not counted** as explicitly evaluated actual arguments. Handling of omitted arguments still requires `call.defaults.omitted`.
 
-This rule does **not** add Target-specific evaluation rules to the Model. Each Target must declare and verify whether its Realization satisfies the evaluation order already retained by the Frontend. The Slot-order check for string Templates in CMP_014 does not guarantee runtime argument evaluation order. Where the Target language has different or unspecified argument evaluation order, the corresponding Realization must introduce needed temporaries or equivalent measures. A `supports` claim alone is not proof of preservation. At this historical stage, generic evaluation order for other value expressions, Port Calls, and operators remained unprotected and recorded as `pending` in the audit ledger.
+This rule does **not** add Target-specific evaluation rules to the Model. Each Target must declare and verify whether its Realization satisfies the evaluation order already retained by the Frontend. The Slot-order check for string Templates in CMP_014 does not guarantee runtime argument evaluation order. Where the Target language has different or unspecified argument evaluation order, the corresponding Realization must introduce needed temporaries or equivalent measures. A `supports` claim alone is not proof of preservation. At this historical stage, generic evaluation order for other value expressions, mapped-function calls, and operators remained unprotected and recorded as `pending` in the audit ledger.
 
 title: Evaluation-order contracts for bound direct Calls and Target responsibility
 
@@ -182,7 +182,7 @@ related: [CST_001](construct.md#cst_001)
 
 Iteration 21 defined Target-independent `for_control_flow` admission rules for `break` / `continue` control in a `For`, and for executing its `else` only on normal completion **without a break** when `else_body` exists. Every `For` requires `loop.for.break_continue`; only a `For` with `else_body` additionally requires `loop.for.normal_completion_else`. Every `With`, regardless of entry count or nesting, requires `context.with.enter_exit_exception`, covering entry order, reverse exit order, exit on exceptions, and suppression of exceptions.
 
-The C Target Implementation's range loop and the nonpublic development Python Realizer's `for` / `with` explicitly declare corresponding `supports` on their rules. A Realization missing the declaration is rejected before `render` or header requirements are collected. Self-declared Admission support does **not** guarantee Target runtime semantics: exercise `break` / `continue` / `else` cases and exceptional entry/exit sequences on the Target. No new Model fields or Target-specific implementation strategy are imposed. At that point, evaluation-order support for `Comparison` used by the standard Packs remained `pending`, to be addressed separately.
+The C Realizer's range loop and the nonpublic development Python Realizer's `for` / `with` explicitly declare corresponding `supports` on their rules. A Realization missing the declaration is rejected before `render` or header requirements are collected. Self-declared Admission support does **not** guarantee Target runtime semantics: exercise `break` / `continue` / `else` cases and exceptional entry/exit sequences on the Target. No new Model fields or Target-specific implementation strategy are imposed. At that point, evaluation-order support for `Comparison` used by the standard Packs remained `pending`, to be addressed separately.
 
 title: Connecting For/With control flow to Realization admission
 
@@ -192,11 +192,11 @@ related: [CST_001](construct.md#cst_001)
 
 ## CMP_020
 
-For existing typed binary expressions (`Arithmetic`, `Comparison`, `FloatingArithmetic`, `FloatingComparison`, and string-related binary expressions), the obligation to evaluate left then right, or `source` then `index`, is required as `evaluation.operands.left_to_right`. Port `Call` requires `call.arguments.left_to_right` when it has at least two actual arguments. `FunctionValueCall` requires the same contract when it has multiple arguments and additionally requires `function_value.callee_before_arguments` when **any** arguments are present. This does not insert Target-language evaluation-order rules or side-effect analysis into the Model.
+For existing typed binary expressions (`Arithmetic`, `Comparison`, `FloatingArithmetic`, `FloatingComparison`, and string-related binary expressions), the obligation to evaluate left then right, or `source` then `index`, is required as `evaluation.operands.left_to_right`. A mapped-function `Call` requires `call.arguments.left_to_right` when it has at least two actual arguments. `FunctionValueCall` requires the same contract when it has multiple arguments and additionally requires `function_value.callee_before_arguments` when **any** arguments are present. This does not insert Target-language evaluation-order rules or side-effect analysis into the Model.
 
 For simple string Templates, the relevant Value Slots must each appear **exactly once and in source order**. Expansions into derived Slots via `TemplatePlan` are excluded from this mechanical check and need Target-specific verification. Textual Slot order is not proof of execution order, and `supports` is a declaration rather than a proof. The standard C Comparison Realization conservatively rejects combinations of complex operands whose evaluation order it cannot guarantee, restricting itself to comparisons of simple references, constants, and similar operands. Missing Realizations remain rejected as before.
 
-title: Typed binary/Port/function-value evaluation-order admission and direct Slot checks
+title: Typed binary/mapped-function/function-value evaluation-order admission and direct Slot checks
 
 level: MUST
 
@@ -204,7 +204,7 @@ related: [CST_001](construct.md#cst_001)
 
 ## CMP_021
 
-Naming rules are declared with the **zero-argument** Shikumi marker `@naming`. That marker registers the naming policy; `reserved`, `forbidden_prefixes`, and `requirement_line` specify reserved identifiers, forbidden prefixes, and the format of generated requirements using `@=`. A class cannot use `@naming` and `@realizes(element)` together. Duplicate naming policies within a Target, declarations without either marker, `requirement_line` Slots other than `${name}`, and `supports` attached to Naming are rejected. The Host, C Target, and development Python Realizer use one declaration system only; no path accepts obsolete declaration formats.
+Naming rules are declared with the **zero-argument** marker `@naming`. That marker registers the naming policy; `reserved`, `forbidden_prefixes`, and `requirement_line` specify reserved identifiers, forbidden prefixes, and the format of generated requirements as class attributes (`=`). A class cannot use `@naming` and `@realizes(element)` together. Duplicate naming policies within a Target, declarations without either marker, `requirement_line` Slots other than `${name}`, and `supports` attached to Naming are rejected. The Host, C Target, and development Python Realizer use one declaration system only; no path accepts obsolete declaration formats.
 
 title: Exclusivity of Naming marker and Realization declaration
 
@@ -212,7 +212,7 @@ level: MUST
 
 ## CMP_022
 
-`RealizationRegistry.type_name()` accepts `Symbol`, `ValueType`, or `PortType`, passing the **complete shape** of the Model type information to type-spelling selectors. Realization selection via `@realizes(vt.List)` and similar declarations still uses the broad `ValueKind` categories, but a dynamic `type_name @= callable` receives the concrete, recursive `ValueType`. A selector for a Port type still receives the complete `PortType`. The Target may select different spellings for composite shapes, share a spelling between types, or reject types it cannot realize. Fixed spellings are still supported for string type spellings; absent type support and empty or non-string results are rejected. `FunctionDefinition.parts()` / `HOLES` additionally expose a signature's `return_type` as a complete `ValueType`, using the same type-spelling path as `type` Slots in `Parameter`, `Initialize`, `FieldDefinition`, and others. The Model does not dictate Target type syntax.
+`RealizationRegistry.type_name()` accepts `Symbol`, `ValueType`, or `MappedType`, passing the **complete shape** of the Model type information to type-spelling selectors. Realization selection via `@realizes(vt.List)` and similar declarations still uses the broad `ValueKind` categories, but a dynamic `type_name = callable` receives the concrete, recursive `ValueType`. A selector for a mapped type still receives the complete `MappedType`. The Target may select different spellings for composite shapes, share a spelling between types, or reject types it cannot realize. Fixed spellings are still supported for string type spellings; absent type support and empty or non-string results are rejected. `FunctionDefinition.parts()` / `HOLES` additionally expose a signature's `return_type` as a complete `ValueType`, using the same type-spelling path as `type` Slots in `Parameter`, `Initialize`, `FieldDefinition`, and others. The Model does not dictate Target type syntax.
 
 title: Type Slots and spelling without loss of composite or return types
 
@@ -222,7 +222,7 @@ related: [CST_001](construct.md#cst_001)
 
 ## CMP_024
 
-A dynamic `type_name @= callable` takes two arguments, `(shape, spell)`. `shape` is the complete `ValueType` or `PortType`; `spell` recursively resolves type spellings registered **in the same Target's `RealizationRegistry`**, accepting `Symbol`, `ValueType`, and `PortType`. Unknown nested types must be rejected rather than implicitly falling back to Python notation, and every level's output must be verified to be a nonempty string. If the same **concrete type** is requested again along the call path of one type-spelling request, the cycle is rejected with `ConstructError`. The guard is not shared between independent requests.
+A dynamic `type_name = callable` takes two arguments, `(shape, spell)`. `shape` is the complete `ValueType` or `MappedType`; `spell` recursively resolves type spellings registered **in the same Target's `RealizationRegistry`**, accepting `Symbol`, `ValueType`, and `MappedType`. Unknown nested types must be rejected rather than implicitly falling back to Python notation, and every level's output must be verified to be a nonempty string. If the same **concrete type** is requested again along the call path of one type-spelling request, the cycle is rejected with `ConstructError`. The guard is not shared between independent requests.
 
 A fixed type-spelling string remains valid. Legacy dynamic selectors accepting just one argument must migrate to the new convention: the Host does not inspect argument counts automatically and does not provide a second type mapping table. Model type structure, the Target's supported type range, and Slot `separators` rules are unchanged.
 
@@ -232,7 +232,7 @@ level: MUST
 
 ## CMP_023
 
-A Realization's `separators @= {"slot_name": "separator"}` specifies, **per Slot**, the string used between elements of a Model-derived `tuple` Slot referenced by its Template. An unspecified tuple remains newline-joined as before; an empty tuple produces an empty string. Elements must not be reordered, inserted, or discarded; joining occurs only through deferred composition and final rendering. A non-Slot name, an unreferenced Slot, a non-string separator, or a separator assigned to a Model part that is **not actually a `tuple`** must be rejected. The restriction against inline multiline Slot expansion remains in force. Trailing delimiters, brackets, and grammatical validity in the Target language remain the Realization's responsibility; they are not filled in automatically.
+A Realization's `separators = {"slot_name": "separator"}` specifies, **per Slot**, the string used between elements of a Model-derived `tuple` Slot referenced by its Template. An unspecified tuple remains newline-joined as before; an empty tuple produces an empty string. Elements must not be reordered, inserted, or discarded; joining occurs only through deferred composition and final rendering. A non-Slot name, an unreferenced Slot, a non-string separator, or a separator assigned to a Model part that is **not actually a `tuple`** must be rejected. The restriction against inline multiline Slot expansion remains in force. Trailing delimiters, brackets, and grammatical validity in the Target language remain the Realization's responsibility; they are not filled in automatically.
 
 title: Per-Slot tuple-join separators
 
@@ -240,7 +240,7 @@ level: MUST
 
 ## CMP_025
 
-A Target Pack declares `pack_dispatch @= "composition" | "structural"` (default: `composition`) and `pack_session @= callable`. `composition` uses the existing Template/Slot chain in first-occurrence order; `structural` invokes every Construct reachable through `Construct.parts()` in **depth-first preorder**. Dispatch is selected **per Target Pack**, and mixed `template`/`render` and `visit` declarations in one Pack are rejected. In Structural mode the Session factory cannot be omitted. Non-Construct parts such as type information are not themselves visited, but remain available for inspection in the original Model.
+A Target Pack declares `dispatch = "composition" | "structural"` (default: `composition`) and `session = callable`. `composition` uses the existing Template/Slot chain in first-occurrence order; `structural` invokes every Construct reachable through `Construct.parts()` in **depth-first preorder**. Dispatch is selected **per Target Pack**, and mixed `template`/`render` and `visit` declarations in one Pack are rejected. In Structural mode the Session factory cannot be omitted. Non-Construct parts such as type information are not themselves visited, but remain available for inspection in the original Model.
 
 title: Target Pack-level dispatch selection
 
@@ -248,7 +248,7 @@ level: MUST
 
 ## CMP_026
 
-Structural Realizations declare `@realizes(element)` and `visit @= callable`. The Visitor receives the original Construct and an `EmitContext`, with Target-owned execution state exposed as `ctx.session`. Visitors must return **only `None`**. The context's `root`, `current`, `parent`, `ancestors`, and `path` reference the original Model with the same meanings as in Composition. A Construct object occurring at multiple structural positions is visited **at each position**. With the default `preservation` / `error` policies, missing Realizers, missing Admission registrations, and unsupported required semantic contracts are rejected as before. Explicit projection and traversal follow CMP_028–CMP_030.
+Structural Realizations declare `@realizes(element)` and `visit = callable`. The Visitor receives the original Construct and an `EmitContext`, with Target-owned execution state exposed as `ctx.session`. Visitors must return **only `None`**. The context's `root`, `current`, `parent`, `ancestors`, and `path` reference the original Model with the same meanings as in Composition. A Construct object occurring at multiple structural positions is visited **at each position**. With the default `preservation` / `error` policies, missing Realizations, missing Admission registrations, and unsupported required semantic contracts are rejected as before. Explicit projection and traversal follow CMP_028–CMP_030.
 
 title: Structural-order visitation, Model references, and admission contracts
 
@@ -256,7 +256,7 @@ level: MUST
 
 ## CMP_027
 
-The Target's `pack_session` factory is invoked **once per realization request**, and every Realizer can access the state through `EmitContext.session`. Composition passes its existing Composer's deferred Layout to the Session via `accept_composition(layout, context)`; the Target then submits the final artifact using `finish()`. Text Targets may opt into the shared helper `TextArtifactSession`, while non-text artifact formats and internal state are entirely Target-defined. Structural requires only `finish()` on its Session. The Host does **not** stringify artifacts, invoke dedicated header/footer hooks, or save output files. `Composer.source()` remains available as a standalone legacy-style text-composition API.
+The Target's `session` factory is invoked **once per realization request**, and every Realization can access the state through `EmitContext.session`. Composition passes its existing Composer's deferred Layout to the Session via `accept_composition(layout, context)`; the Target then submits the final artifact using `finish()`. Text Targets may opt into the shared helper `TextArtifactSession`, while non-text artifact formats and internal state are entirely Target-defined. Structural requires only `finish()` on its Session. The Host does **not** stringify artifacts, invoke dedicated header/footer hooks, or save output files. `Composer.source()` remains available as a standalone legacy-style text-composition API.
 
 title: Target Session ownership and submission of artifacts
 
@@ -264,7 +264,7 @@ level: MUST
 
 ## CMP_028
 
-A Target Pack may declare `pack_semantics @= "preservation" | "projection"` (default: `preservation`), independently of `pack_dispatch`; the Registry also exposes this distinction. In Preservation, the existing Admission-required execution-semantic contracts are matched against Realizations' `supports` declarations. Projection does **not** claim preservation of an artifact's execution semantics, so this particular `supports` matching is **not** required. However, provider Admission registrations, baseline integrity, and `check_tree()` acceptance of the **entire Model** are verified identically in both modes. The Target is responsible for the accuracy of information in projected artifacts; selecting Projection does not itself establish correctness.
+A Target Pack may declare `semantics = "preservation" | "projection"` (default: `preservation`), independently of `dispatch`; the Registry also exposes this distinction. In Preservation, the existing Admission-required execution-semantic contracts are matched against Realizations' `supports` declarations. Projection does **not** claim preservation of an artifact's execution semantics, so this particular `supports` matching is **not** required. However, provider Admission registrations, baseline integrity, and `check_tree()` acceptance of the **entire Model** are verified identically in both modes. The Target is responsible for the accuracy of information in projected artifacts; selecting Projection does not itself establish correctness.
 
 title: Explicit distinction between semantic preservation and projection
 
@@ -272,7 +272,7 @@ level: MUST
 
 ## CMP_029
 
-`pack_unhandled @= "error" | "traverse"` controls visits to Constructs **without a matching Realization**; the default is `error`, which rejects them explicitly. `traverse` is permitted **only** when `pack_dispatch="structural"` **and** `pack_semantics="projection"`. When an exact Construct type or variant has no registered Realization, it skips the Visitor but continues depth-first, parent-first traversal through child Constructs in that node's `parts()`. It must not suppress errors raised by registered Visitors, invalid Visitor return values, Call argument checks, or cycle detection. It does **not** permit unregistered Construct types in Admission: `check_tree()` still validates the entire Model before creating a Session. Unhandled traversal is prohibited for Preservation and Composition.
+`unhandled = "error" | "traverse"` controls visits to Constructs **without a matching Realization**; the default is `error`, which rejects them explicitly. `traverse` is permitted **only** when `dispatch="structural"` **and** `semantics="projection"`. When an exact Construct type or variant has no registered Realization, it skips the Visitor but continues depth-first, parent-first traversal through child Constructs in that node's `parts()`. It must not suppress errors raised by registered Visitors, invalid Visitor return values, Call argument checks, or cycle detection. It does **not** permit unregistered Construct types in Admission: `check_tree()` still validates the entire Model before creating a Session. Unhandled traversal is prohibited for Preservation and Composition.
 
 title: Explicit traversal past unhandled Constructs in projection Targets
 
@@ -280,7 +280,7 @@ level: MUST
 
 ## CMP_030
 
-`pack_semantics` and `pack_unhandled` are **Target contract metadata**, not fields the Host automatically embeds in or wraps around submitted artifacts. `convert` and `realize` return the arbitrary object produced by `Session.finish()` **unchanged**. This phase does not standardize in-artifact metadata, correctness of individual projections, a comprehensive declaration of projection coverage, or Structural child-visit completion hooks.
+`semantics` and `unhandled` are **Target contract metadata**, not fields the Host automatically embeds in or wraps around submitted artifacts. `convert` and `realize` return the arbitrary object produced by `Session.finish()` **unchanged**. This phase does not standardize in-artifact metadata, correctness of individual projections, a comprehensive declaration of projection coverage, or Structural child-visit completion hooks.
 
 title: Independence of semantic mode and artifact format
 
@@ -288,12 +288,52 @@ level: MUST
 
 ## CMP_031
 
-During Realization registration, when `Construct.variant_domain()` returns a **finite set**, a concrete `variant @=` value must belong to that set; misspellings are rejected. An omitted variant still means `"default"`, but registration rejects that omission if the Construct has no default variant. Under `structural` + `projection`, a variant must be **explicitly specified** for Constructs with multiple variants or an open variant domain. `variant @= "default"` selects only that variant; `variant @= "*"` explicitly matches **any** variant. `*` is not expanded into known variants at registration and also matches variants added later.
+During Realization registration, when `Construct.variant_domain()` returns a **finite set**, a concrete `variant` value must belong to that set; misspellings are rejected. An omitted variant still means `"default"`, but registration rejects that omission if the Construct has no default variant. Under `structural` + `projection`, a variant must be **explicitly specified** for Constructs with multiple variants or an open variant domain. `variant = "default"` selects only that variant; `variant = "*"` explicitly matches **any** variant. `*` is not expanded into known variants at registration and also matches variants added later.
 
-If the same Construct has both a concrete variant and a `*` declaration, the **concrete match wins**. Duplicate declarations for the same Construct and same variant, including duplicate `*`, remain rejected. The wildcard broadens only **Realization selection**, not Preservation Admission / `supports` checks or structural validation. Concrete keys from an open domain cannot be checked against a complete list and are resolved at runtime. Variant declarations are prohibited on Calls, type-spelling declarations, and Naming declarations. A projection Target using `traverse` may continue past variants other than those it explicitly selects: registering a Realizer for part of a Construct's variants does **not** make all other variants errors.
+If the same Construct has both a concrete variant and a `*` declaration, the **concrete match wins**. Duplicate declarations for the same Construct and same variant, including duplicate `*`, remain rejected. The wildcard broadens only **Realization selection**, not Preservation Admission / `supports` checks or structural validation. Concrete keys from an open domain cannot be checked against a complete list and are resolved at runtime. Variant declarations are prohibited on Calls, type-spelling declarations, and Naming declarations. A projection Target using `traverse` may continue past variants other than those it explicitly selects: registering a Realization for part of a Construct's variants does **not** make all other variants errors.
 
 title: Pre-registration variant-domain validation and wildcard selection
 
 level: MUST
 
 related: [CST_075](construct.md#cst_075)
+
+## CMP_032
+
+Declaration classes for Realization, Naming, Target Pack, and Interface Mapping are read only from values written by ordinary assignment (`=`) in the class's own namespace (`vars(cls)`) and from the role markers `@realizes(element)` / `@naming` / `@maps(function)` / `@signature(...)`. Names starting with `_` and dunders are not treated as declarations. Public names other than the defined declaration names (including misspellings), values that do not match the type of their declaration name, `requires` that is not a tuple of `str`, repeated application of the same marker, and inheritance from a declaration class are rejected with `ValueError` at registration and are never silently ignored. Only an Interface Mapping parent class may contain directly nested classes. The Host reads and validates declarations itself, without depending on third-party libraries.
+
+title: Read scope and rejection conditions for class-attribute declarations
+
+level: MUST
+
+## CMP_033
+
+Admission rules for Language Constructs do not require Python-semantics preservation obligations when the node or one of its direct parts (including values and referenced Symbols) carries a kind label, because the Host does not know how a kind behaves on the Target. Obligations for operations without kinds, the Admission registration inventory check, and rules of external Construct providers are unchanged.
+
+title: Waiving Python-semantics obligations for operations involving kinds
+
+level: MUST
+
+## CMP_034
+
+A Target may register type spellings for elements of `pyinto.model.kinds` (e.g. `@realizes(dd.Int)` with `from pyinto.model.kinds.datatypes import detailed as dd`). The elements are split into the same surface and tier modules as `pyinto.kinds`. For a labeled type, `type_name()` looks up the `kind:word` registration and never substitutes the spelling for the unlabeled kind; a missing registration is rejected explicitly. A dynamic spelling receives the complete `ValueType` including its label together with `spell`, so nested types such as `Pointer[Int[32]]` can be spelled recursively with their labels kept distinct. Because the source-side `Void` / `Nil` / `Null` are `None`, these elements are used as registration subjects.
+
+title: Selecting type spellings by kind label
+
+level: MUST
+
+## CMP_035
+
+Words of the `general` tier and Python's built-in types (the base types) are the general vocabulary that every language-producing Target interprets. Steps of `Wide` / `Narrow` are given representations so that a smaller step never exceeds a larger one. The Host neither enforces this obligation at registration nor verifies it, but `pyinto.model.kinds.missing_general(registry)` returns, in a fixed order, the base types, `general` type words, and general memory-operation Constructs that are not registered. `pyinto.model.kinds.profile(value_type)` reads `Wide` / `Narrow` / `Unsigned` as the base type, the step (positive for Wide, negative for Narrow), and whether it is unsigned. A Target may reject `detailed` words it does not support.
+
+title: Interpretation obligations for the general vocabulary and coverage checks
+
+level: MUST
+
+## CMP_036
+
+Type-spelling registrations may also declare requirement names with `requires`. The Composer collects, while composing, the requirement names of the spellings used by Slot types and includes them in `requirements`. Rejection of types that cannot be spelled still happens at final rendering, as before. When a render callback spells a type itself, `EmitContext.type_name()` also records its requirement names.
+
+title: Requirement names of type spellings
+
+level: MUST

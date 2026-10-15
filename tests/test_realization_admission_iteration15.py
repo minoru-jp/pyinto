@@ -18,10 +18,6 @@ from pyinto.realizations.registry import Composer, EmitContext, RealizationRegis
 from pyinto.realizations.regulation import (
     naming,
     realizes,
-    render,
-    requires,
-    supports,
-    template,
 )
 from tests.test_keyword_arguments_phase25 import CLASS, FUNCTION
 
@@ -73,7 +69,7 @@ def test_method_dispatch_cannot_be_silently_ignored() -> None:
 
     @realizes(MethodCall)
     class Unsafe:
-        template @= "${receiver}.${method}()"
+        template = "${receiver}.${method}()"
 
     registry = RealizationRegistry("test", (Unsafe,))
     with pytest.raises(ConstructError, match=r"method.dispatch.virtual"):
@@ -83,8 +79,8 @@ def test_method_dispatch_cannot_be_silently_ignored() -> None:
 
     @realizes(MethodCall)
     class VirtualOnly:
-        template @= "${receiver}.${method}()"
-        supports @= (
+        template = "${receiver}.${method}()"
+        supports = (
             "call.arguments.bound",
             "call.arguments.left_to_right",
             "method.dispatch.virtual",
@@ -102,8 +98,8 @@ def test_reordered_arguments_and_omission_require_explicit_support() -> None:
 
     @realizes(FunctionCall)
     class BoundOnly:
-        template @= "${arg0},${arg1},${arg2}"
-        supports @= ("call.arguments.bound",)
+        template = "${arg0},${arg1},${arg2}"
+        supports = ("call.arguments.bound",)
 
     registry = RealizationRegistry("test", (BoundOnly,))
     with pytest.raises(ConstructError, match="call.arguments.left_to_right"):
@@ -111,8 +107,8 @@ def test_reordered_arguments_and_omission_require_explicit_support() -> None:
 
     @realizes(FunctionCall)
     class OrderedOnly:
-        template @= "${arg0},${arg1},${arg2}"
-        supports @= ("call.arguments.bound", "call.arguments.left_to_right")
+        template = "${arg0},${arg1},${arg2}"
+        supports = ("call.arguments.bound", "call.arguments.left_to_right")
 
     registry = RealizationRegistry("test", (OrderedOnly,))
     assert registry.recipe(positional, EmitContext(registry)).template is not None
@@ -130,8 +126,8 @@ result: int = f(1)
 
     @realizes(FunctionCall)
     class AcceptsDefaults:
-        template @= "${arg0},${arg1}"
-        supports @= ("call.arguments.bound", "call.defaults.omitted")
+        template = "${arg0},${arg1}"
+        supports = ("call.arguments.bound", "call.defaults.omitted")
 
     registry = RealizationRegistry("test", (AcceptsDefaults,))
     assert registry.recipe(defaulted, EmitContext(registry)).template is not None
@@ -142,8 +138,8 @@ def test_admission_happens_before_headers_and_renderer() -> None:
 
     @realizes(FunctionCall)
     class Unsafe:
-        requires @= "danger.h"
-        render @= lambda node, ctx: (rendered.append("called"), "${arg0}")[1]
+        requires = ("danger.h",)
+        render = lambda node, ctx: (rendered.append("called"), "${arg0}")[1]
 
     registry = RealizationRegistry("test", (Unsafe,))
     ctx = EmitContext(registry)
@@ -159,23 +155,23 @@ def test_admission_happens_before_headers_and_renderer() -> None:
 def test_support_declaration_is_validated() -> None:
     @realizes(FunctionCall)
     class NotNamespaced:
-        template @= "${arg0}"
-        supports @= ("every_semantic_contract",)
+        template = "${arg0}"
+        supports = ("every_semantic_contract",)
 
     with pytest.raises(ValueError, match="unique namespaced"):
         RealizationRegistry("test", (NotNamespaced,))
 
     @realizes(FunctionCall)
     class Duplicate:
-        template @= "${arg0}"
-        supports @= ("call.arguments.bound", "call.arguments.bound")
+        template = "${arg0}"
+        supports = ("call.arguments.bound", "call.arguments.bound")
 
     with pytest.raises(ValueError, match="unique namespaced"):
         RealizationRegistry("test", (Duplicate,))
 
     @naming
     class WrongRole:
-        supports @= ("call.arguments.bound",)
+        supports = ("call.arguments.bound",)
 
     with pytest.raises(ValueError, match="supports belongs"):
         RealizationRegistry("test", (WrongRole,))
@@ -188,8 +184,8 @@ def test_unknown_names_are_not_wildcards_and_standard_targets_still_work() -> No
 
     @realizes(FunctionCall)
     class NoWildcard:
-        template @= "${arg0},${arg1},${arg2}"
-        supports @= ("call.arguments.*",)
+        template = "${arg0},${arg1},${arg2}"
+        supports = ("call.arguments.*",)
 
     with pytest.raises(ValueError, match="unique namespaced"):
         RealizationRegistry("test", (NoWildcard,))

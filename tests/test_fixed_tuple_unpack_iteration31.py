@@ -21,7 +21,7 @@ from pyinto.constructs import (
 from pyinto.constructs.admission import LANGUAGE_ADMISSION, required_contracts
 from pyinto.frontend import PythonFrontend, UnsupportedPython
 from pyinto.realizations.registry import EmitContext, RealizationRegistry
-from pyinto.realizations.regulation import realizes, supports, template
+from pyinto.realizations.regulation import realizes
 
 
 def _last(source: str) -> UnpackAssign:
@@ -144,7 +144,7 @@ def test_admission_requires_both_guarantees_before_rendering() -> None:
 
     @realizes(UnpackAssign)
     class NoGuarantees:
-        template @= "${value}"
+        template = "${value}"
 
     registry = RealizationRegistry("probe", (NoGuarantees,))
     with pytest.raises(ConstructError, match="assignment.unpack"):
@@ -152,8 +152,8 @@ def test_admission_requires_both_guarantees_before_rendering() -> None:
 
     @realizes(UnpackAssign)
     class BothGuarantees:
-        template @= "${value}"
-        supports @= (
+        template = "${value}"
+        supports = (
             "assignment.unpack.rhs_once_before_writes",
             "assignment.unpack.targets_left_to_right",
         )

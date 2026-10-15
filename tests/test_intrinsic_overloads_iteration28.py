@@ -22,7 +22,7 @@ from pyinto.constructs.admission import required_contracts
 from pyinto.frontend import PythonFrontend, UnsupportedPython
 from pyinto.intrinsics import IntrinsicRegistry, standard_intrinsics
 from pyinto.realizations.registry import RealizationRegistry
-from pyinto.realizations.regulation import realizes, supports, template, variant
+from pyinto.realizations.regulation import realizes
 
 INT = ValueType(ValueKind.INTEGER)
 FLOAT = ValueType(ValueKind.FLOAT)
@@ -221,9 +221,9 @@ def test_repeat_type_variable_must_match_with_no_widening() -> None:
 def test_per_signature_supports_is_checked_before_rendering() -> None:
     @realizes(IntrinsicCall)
     class OnlyInt:
-        variant @= "intrinsic.global.stringify"
-        template @= "${arg0}"
-        supports @= (
+        variant = "intrinsic.global.stringify"
+        template = "${arg0}"
+        supports = (
             "intrinsic.global.stringify",
             "intrinsic.stringify.int_repr",
             "intrinsic.arguments.once",
@@ -239,18 +239,18 @@ def test_per_signature_supports_is_checked_before_rendering() -> None:
         realize(_call("x: str = stringify(2)", registry), realizations=pack)
 
 
-def test_port_instance_method_has_priority_over_same_named_intrinsic() -> None:
-    from demo_memory_ports_pyinto import MemoryAssign, interface_mapping_registry
+def test_mapped_instance_method_has_priority_over_same_named_intrinsic() -> None:
+    from tests.support.class_mapping import (
+        IMPORT,
+        CounterAdd,
+        interface_mapping_registry,
+    )
 
     registry = IntrinsicRegistry(
-        (IntrinsicDefinition("assign", IntrinsicListType(T), (T,), NONE),)
+        (IntrinsicDefinition("add", IntrinsicListType(T), (T,), NONE),)
     )
-    source = (
-        "from demo_memory_ports.memory import ManualMemoryRegion\n"
-        "a: ManualMemoryRegion = ManualMemoryRegion.integer(minimum=0, maximum=255)\n"
-        "a.assign(42)\n"
-    )
+    source = IMPORT + "a: Counter = Counter.open()\na.add(42)\n"
     model = PythonFrontend(interface_mapping_registry(), intrinsics=registry).parse(
         source
     )
-    assert isinstance(model.body.children[-1], MemoryAssign)
+    assert isinstance(model.body.children[-1], CounterAdd)

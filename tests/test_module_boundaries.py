@@ -78,7 +78,7 @@ def test_frt_058_unimplemented_registered_effects_are_rejected() -> None:
         frontend.parse("@annotate\nclass B:\n    pass\n")
 
 
-def test_frt_058_library_can_export_registered_decorators_alongside_ports() -> None:
+def test_frt_058_library_can_export_registered_decorators_alongside_mappings() -> None:
     from pyinto.constructs import BooleanLiteral
     from pyinto.interface_mapping import (
         InterfaceFunctionMapping,

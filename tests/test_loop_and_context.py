@@ -29,8 +29,8 @@ from pyinto.constructs import (
     While,
     With,
 )
+from pyinto.contracts.boundaries.pipeline import CompositionBoundary, FrontendBoundary
 from pyinto.contracts.construct_contract import ConstructContract, FrontendContract
-from pyinto.contracts.ports.pipeline import CompositionPort, FrontendPort
 from pyinto.realizations import Composer
 from tests.support.c_realizer import c_bindings
 from tests.support.python_realizer.pack import python_bindings
@@ -58,7 +58,7 @@ def run_py(source: str) -> bytes:
     return result.stdout
 
 
-@binds[FrontendPort](PythonFrontend)
+@binds[FrontendBoundary](PythonFrontend)
 class TestNormalization:
     @upholds(FrontendContract.parse.WhileStructure)
     def test_while_break_continue_and_normal_else(self) -> None:
@@ -125,7 +125,7 @@ class TestNormalization:
             PythonFrontend().parse(code)
 
 
-@binds[CompositionPort](Composer)
+@binds[CompositionBoundary](Composer)
 class TestBindingIntegration:
     @upholds(ConstructContract.WhileRealization)
     @pytest.mark.parametrize(

@@ -18,7 +18,7 @@ from pyinto.constructs import (
 )
 from pyinto.constructs.admission import required_contracts
 from pyinto.realizations.registry import Composer, RealizationRegistry
-from pyinto.realizations.regulation import realizes, render, supports
+from pyinto.realizations.regulation import realizes
 from tests.support.c_realizer import c_bindings
 from tests.support.python_realizer.pack import python_bindings
 
@@ -110,8 +110,8 @@ def test_admission_rejects_before_rendering_or_side_effects() -> None:
 
     @realizes(For)
     class OnlyRange:
-        supports @= ("iteration.source.range",)
-        render @= unsafe_render
+        supports = ("iteration.source.range",)
+        render = unsafe_render
 
     target = Reference(Symbol("i", ValueType(ValueKind.STRING), "str"))
     non_range = For(IterationEntry(target, Literal("hello")), Block(()))

@@ -15,10 +15,6 @@ from pyinto.frontend import PythonFrontend
 from pyinto.realizations.registry import EmitContext, RealizationRegistry
 from pyinto.realizations.regulation import (
     realizes,
-    render,
-    requires,
-    supports,
-    template,
 )
 from tests.test_call_realization_iteration16 import _calls
 
@@ -66,9 +62,9 @@ def test_plain_template_is_rejected_before_render_for_unordered_target() -> None
 
     @realizes(FunctionCall)
     class NoOrderGuarantee:
-        requires @= "should_not_be_collected.h"
-        supports @= ("call.arguments.bound",)
-        render @= lambda node, _: (rendered.append(node), "f(${arg0}, ${arg1})")[1]
+        requires = ("should_not_be_collected.h",)
+        supports = ("call.arguments.bound",)
+        render = lambda node, _: (rendered.append(node), "f(${arg0}, ${arg1})")[1]
 
     bindings = RealizationRegistry("unordered-target", (NoOrderGuarantee,))
     context = EmitContext(bindings)
@@ -79,8 +75,8 @@ def test_plain_template_is_rejected_before_render_for_unordered_target() -> None
     # Claiming support is an explicit Target responsibility, not a proof.
     @realizes(FunctionCall)
     class DeclaresOrder:
-        supports @= ("call.arguments.bound", "call.arguments.left_to_right")
-        template @= "f(${arg0}, ${arg1})"
+        supports = ("call.arguments.bound", "call.arguments.left_to_right")
+        template = "f(${arg0}, ${arg1})"
 
     supported = RealizationRegistry("target-contract-declaration", (DeclaresOrder,))
     assert supported.recipe(call, EmitContext(supported)).supports >= {

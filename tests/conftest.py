@@ -4,10 +4,8 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "examples" / "port_demo"))
-
 sys.path.insert(
-    0, str(Path(__file__).resolve().parents[1] / "examples" / "memory_port_demo")
+    0, str(Path(__file__).resolve().parents[1] / "examples" / "mapping_demo")
 )
 
 pytest_plugins = ["shikumi_contrace.pytest"]

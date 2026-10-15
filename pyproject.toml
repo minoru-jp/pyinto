@@ -4,12 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyinto"
-version = "0.1.0"
+version = "0.2.0"
 description = "Experimental Python-to-Model normalization and target-defined artifact realization"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.11"
 license = "MIT"
 authors = [{ name = "minoru-jp" }]
+keywords = [
+    "transpiler",
+    "source-to-source",
+    "code-generation",
+    "ast",
+    "intermediate-representation",
+    "dsl",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -20,11 +28,17 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-dependencies = ["shikumi>=0.2.4"]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/minoru-jp/pyinto"
+Repository = "https://github.com/minoru-jp/pyinto"
+Documentation = "https://github.com/minoru-jp/pyinto/tree/main/docs"
+Changelog = "https://github.com/minoru-jp/pyinto/blob/main/CHANGELOG.md"
+Issues = "https://github.com/minoru-jp/pyinto/issues"
 
 [project.optional-dependencies]
 dev = [
-    "shikumi==0.2.4",
     "shikumi-devdoc==0.3.5",
     "shikumi-contrace==0.1.0",
     "pytest>=8,<10",
@@ -89,6 +103,6 @@ contrace_implementations = [
     "tests.support.python_realizer.pack",
     "pyinto.interface_mapping.registry",
     "pyinto.interface_mapping.declarations",
-    "demo_ports_pyinto.adapter",
-    "demo_memory_ports_pyinto.adapter",
+    "demo_device_pyinto.adapter",
+    "tests.support.class_mapping",
 ]

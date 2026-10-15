@@ -18,7 +18,7 @@ from pyinto.admission import AdmissionDeclaration
 from pyinto.constructs import Construct, ConstructError, Literal, Value, ValueKind
 from pyinto.constructs.admission import LANGUAGE_ADMISSION
 from pyinto.realizations.registry import EmitContext, RealizationRegistry
-from pyinto.realizations.regulation import realizes, template, variant
+from pyinto.realizations.regulation import realizes
 
 
 def _construct_types() -> dict[str, type[Construct]]:
@@ -101,8 +101,8 @@ class _PrototypeNamedOperation(Construct):
 
 @realizes(_PrototypeNamedOperation)
 class _StringUpperPrototype:
-    variant @= "str.upper"
-    template @= "${receiver}"
+    variant = "str.upper"
+    template = "${receiver}"
 
 
 def test_prototype_open_named_operation_can_be_resolved_without_enum() -> None:

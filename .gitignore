@@ -25,8 +25,7 @@ venv/
 
 # Canonical Markdown under devdocs/canonical_documents/ is tracked.
 
-# Locally generated C sample for the external Port experiment.
-examples/port_demo/generated.c
-examples/memory_port_demo/generated.c
+# Locally generated C sample for the Interface Mapping demo.
+examples/mapping_demo/generated.c
 
 .tmp-diff/

@@ -74,28 +74,32 @@ class Value(Construct):
     def callable_type(self) -> CallableType | None:
         return (
             None
-            if self.kind is ValueKind.PORT_OBJECT
+            if self.kind is ValueKind.MAPPED_OBJECT
             else self.value_type.callable_type
         )
 
     @property
     def tuple_type(self) -> TupleType | None:
         return (
-            None if self.kind is ValueKind.PORT_OBJECT else self.value_type.tuple_type
+            None if self.kind is ValueKind.MAPPED_OBJECT else self.value_type.tuple_type
         )
 
     @property
     def list_type(self) -> ListType | None:
-        return None if self.kind is ValueKind.PORT_OBJECT else self.value_type.list_type
+        return (
+            None if self.kind is ValueKind.MAPPED_OBJECT else self.value_type.list_type
+        )
 
     @property
     def dict_type(self) -> DictType | None:
-        return None if self.kind is ValueKind.PORT_OBJECT else self.value_type.dict_type
+        return (
+            None if self.kind is ValueKind.MAPPED_OBJECT else self.value_type.dict_type
+        )
 
     @property
     def instance_type(self) -> InstanceType | None:
         return (
             None
-            if self.kind is ValueKind.PORT_OBJECT
+            if self.kind is ValueKind.MAPPED_OBJECT
             else self.value_type.instance_type
         )

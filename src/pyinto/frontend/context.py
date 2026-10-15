@@ -17,6 +17,7 @@ from pyinto.constructs import (
     Construct,
     FunctionSignature,
     InstanceType,
+    KindLabel,
     Symbol,
 )
 from pyinto.interface_mapping import InterfaceClassMapping
@@ -30,6 +31,8 @@ class NameState:
     callable_aliases: set[str] = field(default_factory=set)
     symbols: dict[str, Symbol] = field(default_factory=dict)
     interface_aliases: dict[str, str] = field(default_factory=dict)
+    # Local import name -> pyinto.kinds word. Parse-local.
+    kind_aliases: dict[str, str] = field(default_factory=dict)
     # Local Python import name -> fully qualified module namespace. Parse-local.
     module_aliases: dict[str, str] = field(default_factory=dict)
     # Exact module paths imported for each bound root (not every sibling module).
@@ -55,6 +58,10 @@ class ClassState:
         default_factory=dict
     )
     class_types: dict[str, InstanceType] = field(default_factory=dict)
+    # Kind vocabulary class decorators, in source order, per class.
+    class_labels: dict[ast.ClassDef, tuple[KindLabel, ...]] = field(
+        default_factory=dict
+    )
     classes: dict[str, ClassSignature] = field(default_factory=dict)
     active_class_type: InstanceType | None = None
     collecting_methods: bool = False

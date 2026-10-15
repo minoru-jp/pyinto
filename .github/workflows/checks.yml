@@ -81,7 +81,7 @@ jobs:
           python -m venv "${RUNNER_TEMP}/pyinto-smoke"
           "${RUNNER_TEMP}/pyinto-smoke/bin/python" -m pip install dist/*.whl
           cd "${RUNNER_TEMP}"
-          "${RUNNER_TEMP}/pyinto-smoke/bin/python" -c 'import importlib.util; import pyinto; import shikumi; assert importlib.util.find_spec("pyinto.targets") is None; assert importlib.util.find_spec("pyinto.contracts") is None'
+          "${RUNNER_TEMP}/pyinto-smoke/bin/python" -c 'import importlib.util; import pyinto; assert importlib.util.find_spec("shikumi") is None; assert importlib.util.find_spec("pyinto.targets") is None; assert importlib.util.find_spec("pyinto.contracts") is None'
       - name: Save verified distributions
         uses: actions/upload-artifact@v7
         with:

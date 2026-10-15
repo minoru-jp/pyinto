@@ -14,11 +14,13 @@ from .functions import (
     _call_evaluation_order,
     _validate_omitted_defaults,
 )
-from .type_rules import _compatible, _value_type_compatible
+from .type_rules import _binds, _value_type_compatible
 from .types import (
+    CLASS_LABELS,
     ConstructError,
     Identifier,
     InstanceType,
+    KindLabel,
     MethodKind,
     ParameterRole,
     ValueKind,
@@ -166,11 +168,21 @@ class ClassDefinition(Construct):
     signature: ClassSignature
     methods: tuple[FunctionDefinition, ...]
     docstring: str | None = None
+    # Kind vocabulary class decorators (@Interface, @MixIn, @Implements),
+    # recorded in source order for Targets; the Host attaches no meaning.
+    labels: tuple[KindLabel, ...] = ()
     HOLES: ClassVar[frozenset[str]] = frozenset({"name", "fields", "methods"})
 
     def __post_init__(self) -> None:
         if tuple(m.signature for m in self.methods) != self.signature.methods:
             raise ConstructError("Class methods must match their declaration")
+        if not isinstance(self.labels, tuple) or any(
+            not isinstance(label, KindLabel) or label.name not in CLASS_LABELS
+            for label in self.labels
+        ):
+            raise ConstructError("Class labels must be kind class labels")
+        if len({label.name for label in self.labels}) != len(self.labels):
+            raise ConstructError("Duplicate kind class label")
         if self.docstring is not None and not isinstance(self.docstring, str):
             raise ConstructError("Class docstring must be text")
 
@@ -210,7 +222,7 @@ class InstanceCreation(Value):
         if (
             len(self.arguments) != len(params)
             or any(not isinstance(v, Value) for v in self.arguments)
-            or any(not _compatible(p, v) for p, v in zip(params, self.arguments))
+            or any(not _binds(p, v) for p, v in zip(params, self.arguments))
         ):
             raise ConstructError("Instance initializer argument mismatch")
 
@@ -315,7 +327,7 @@ class ClassMethodCall(Value):
             self.signature.defaults_by_parameter[start:],
         )
         if len(self.arguments) != len(self.signature.parameters[start:]) or any(
-            not _compatible(p, v)
+            not _binds(p, v)
             for p, v in zip(self.signature.parameters[start:], self.arguments)
         ):
             raise ConstructError("Class method argument mismatch")
@@ -381,7 +393,7 @@ class ClassReceiverCreation(Value):
             init.defaults_by_parameter[1:],
         )
         if len(self.arguments) != len(init.parameters) - 1 or any(
-            not _compatible(p, v) for p, v in zip(init.parameters[1:], self.arguments)
+            not _binds(p, v) for p, v in zip(init.parameters[1:], self.arguments)
         ):
             raise ConstructError("Class factory argument mismatch")
 
@@ -532,7 +544,7 @@ class MethodCall(Value):
         if (
             len(self.arguments) != len(params)
             or any(not isinstance(v, Value) for v in self.arguments)
-            or any(not _compatible(p, v) for p, v in zip(params, self.arguments))
+            or any(not _binds(p, v) for p, v in zip(params, self.arguments))
         ):
             raise ConstructError("Method argument mismatch")
 

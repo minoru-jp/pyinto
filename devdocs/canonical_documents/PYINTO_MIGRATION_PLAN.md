@@ -217,7 +217,7 @@ python -m pip wheel --no-deps --no-build-isolation . -w dist
 
 - **実施済み（工程4c）**：Python Source Adapter の外部API対応付けを `pyinto.interface_mapping` に配置し、`PortRegistry`→`InterfaceMappingRegistry`、`PortDefinition`→`InterfaceFunctionMapping`、`PortClassDefinition`→`InterfaceClassMapping`、`PortMethodDefinition`→`InterfaceMethodMapping`、`PortNormalizer`→`InterfaceMappingNormalizer` に改名。
 - **公開入口**：`convert(interface_mappings=...)` と `PythonFrontend(interface_mappings=...)` を用いる。登録済み関数・クラス・メソッド・属性の対応規則と `admission_declarations` の検証は変更せず、旧 `ports=` キーワード・旧モジュールへの互換エイリアスは設けない。
-- **分離して保留する識別子**：`PortType`、`Symbol.port_type`、`ValueKind.PORT_OBJECT`、`port:`キーはModelの外部オブジェクト型・Realizationの型名選択に使われるため、名称だけでなくシリアライズ上の同一性や利用者側の型登録を確認した後に扱う。サンプルAdapterのfactoryは `interface_mapping_registry()` に揃え、登録対象となる外部ライブラリ `demo_ports` 等の実在するモジュール名は変更しない。
+- **分離して保留する識別子**：`PortType`、`Symbol.port_type`、`ValueKind.PORT_OBJECT`、`port:`キーはModelの外部オブジェクト型・Realizationの型名選択に使われるため、名称だけでなくシリアライズ上の同一性や利用者側の型登録を確認した後に扱う。サンプルAdapterのfactoryは `interface_mapping_registry()` に揃え、登録対象となる外部ライブラリ `demo_ports` 等の実在するモジュール名は変更しない。この保留分は0.2.0で `MappedType`、`Symbol.mapped_type`、`ValueKind.MAPPED_OBJECT`、`mapped:` キーへ改名し、デモの外部ライブラリも `demo_device` とした。
 - **責務**：Interface MappingはPythonの既知の外部APIをConstructに対応付ける設定であり、Interfaceそのものを定義する登録機構ではない。Language Constructおよび意味契約・既存の受理条件に変更はない。
 - **検証**：Python外部関数、インスタンス、属性、入出力、AdmissionとRealizationの回帰テストを維持し、文書は正本ソースから生成する。工程4cの完了は型情報の名称統一を意味しない。
 

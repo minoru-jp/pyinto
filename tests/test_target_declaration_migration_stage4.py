@@ -7,10 +7,8 @@ from pyinto.interfaces import language as lang
 from pyinto.model import value_types as vt
 from pyinto.realizations.registry import RealizationRegistry
 from pyinto.realizations.regulation import (
-    NAMING,
-    REALIZES,
-    ROLE_TYPES,
-    entry_regulation,
+    ROLE_MARKERS,
+    read_entry,
     realization_target,
 )
 from tests.support.c_realizer.pack import C_DECLARATIONS, c_bindings
@@ -18,18 +16,18 @@ from tests.support.python_realizer.pack import PYTHON_DECLARATIONS, python_bindi
 
 
 def test_declaration_kinds_are_only_realization_and_naming() -> None:
-    assert set(ROLE_TYPES) == {REALIZES, NAMING}
+    assert set(ROLE_MARKERS) == {"realizes", "naming"}
 
 
 def test_all_c_and_development_python_entries_use_public_decorators() -> None:
     for declarations in (C_DECLARATIONS, PYTHON_DECLARATIONS):
         for declaration in declarations:
-            result = entry_regulation.validate(declaration)
-            assert result.is_valid, (declaration.__name__, result.diagnostics)
-            info = result.view.focused
-            assert info.has(REALIZES) != info.has(NAMING), declaration.__name__
-            if info.has(REALIZES):
-                assert realization_target(info.values(REALIZES)[0]) is not None
+            info = read_entry(declaration)
+            assert info.has_marker("realizes") != info.has_marker("naming"), (
+                declaration.__name__
+            )
+            if info.has_marker("realizes"):
+                assert realization_target(info.marker("realizes")) is not None
 
 
 def test_c_pack_has_unchanged_construct_call_and_type_routes() -> None:

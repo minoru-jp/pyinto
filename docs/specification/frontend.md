@@ -4,7 +4,7 @@ This document specifies the implemented Python Frontend contracts for pyinto. Th
 
 ## FRT_001
 
-`PythonFrontend.parse(source)` parses input text using the Python AST and normalizes it into a `Program` and its child Construct structure. It does not execute the original Python program or Port methods. It rejects unsupported syntax and unresolved references rather than filling gaps by conjecture.
+`PythonFrontend.parse(source)` parses input text using the Python AST and normalizes it into a `Program` and its child Construct structure. It does not execute the original Python program or mapped methods. It rejects unsupported syntax and unresolved references rather than filling gaps by conjecture.
 
 title: Static normalization from the AST
 
@@ -14,7 +14,7 @@ related: [CST_001](construct.md#cst_001)
 
 ## FRT_002
 
-As a rule, a new variable must be declared with a type annotation and an initial value. The only exception is introduction from a known element type at a `for` iteration entry under FRT_070. A plain reassignment to an existing name does not require redeclaring its type, but incompatible assignments are rejected. Ordinary types are currently limited to `int`, `str`, `bool`, `float`, `object`, explicitly imported `typing.Any`, and registered Port classes. An ordinary type annotation is normalized into its notation and a single `ValueType`; an annotation of a Port class is handled separately as a Port declaration. No intermediate representation that splits a type into seven components is used.
+As a rule, a new variable must be declared with a type annotation and an initial value. The only exception is introduction from a known element type at a `for` iteration entry under FRT_070. A plain reassignment to an existing name does not require redeclaring its type, but incompatible assignments are rejected. Ordinary types are currently limited to `int`, `str`, `bool`, `float`, `object`, explicitly imported `typing.Any`, and registered mapped classes. An ordinary type annotation is normalized into its notation and a single `ValueType`; an annotation of a mapped class is handled separately as a mapped-object declaration. No intermediate representation that splits a type into seven components is used.
 
 title: Explicitly typed bindings
 
@@ -24,7 +24,7 @@ related: [CST_002](construct.md#cst_002)
 
 ## FRT_003
 
-New typed bindings in the bodies of `if`, `while`, `for`, and `with`, and their `else` clauses, follow the restricted rules of FRT_071. Declaring or rebinding Port objects in those blocks is rejected. New declarations in `try` clauses remain subject to FRT_021. Introducing a single `for` loop variable follows FRT_070; the binding target of `with ... as` must have been declared with a type before use. A `for` iterable is limited to an integer `range`, string, `list[T]`, or fixed-length `tuple`. It is accepted only if every known iteration-element type can be assigned to the target variable; an empty tuple needs no element-type check. General Iterables of unknown element type, dictionaries, and non-iterable values are rejected. `break` and `continue` require at least one enclosing loop.
+New typed bindings in the bodies of `if`, `while`, `for`, and `with`, and their `else` clauses, follow the restricted rules of FRT_071. Declaring or rebinding mapped objects in those blocks is rejected. New declarations in `try` clauses remain subject to FRT_021. Introducing a single `for` loop variable follows FRT_070; the binding target of `with ... as` must have been declared with a type before use. A `for` iterable is limited to an integer `range`, string, `list[T]`, or fixed-length `tuple`. It is accepted only if every known iteration-element type can be assigned to the target variable; an empty tuple needs no element-type check. General Iterables of unknown element type, dictionaries, and non-iterable values are rejected. `break` and `continue` require at least one enclosing loop.
 
 title: Restrictions on name binding within control structures
 
@@ -50,7 +50,7 @@ An external function Mapping may register named parameters and their types throu
 
 `InterfaceVariadicParameter` supports a variadic positional parameter of homogeneous type whose argument count is statically known. The ordered arguments are passed to the factory without reevaluating Python expressions; dynamic argument unpacking is rejected. Multiple distinct signatures may be registered explicitly for one fully qualified function name. Names, counts, types, and defaults are matched and the factory invoked only when exactly one candidate is selected. Duplicate signatures are rejected at registration; zero or multiple matches are rejected while parsing, without using registration order as precedence. Argument expressions are normalized once, irrespective of the number of candidate signatures. Unpacked arguments, keyword-only arguments, and dynamic defaults are unsupported. Legacy positional-type-sequence Mappings retain their former admission rules.
 
-With Shikumi, `@maps(function)` decorates the parent class and nested `@signature(...)` declarations with `factory @= ...` represent individual function signatures. `InterfaceMappingRegistry.from_declarations()` can explicitly convert them into the same `InterfaceFunctionMapping` type as before. `@maps` uses the referenced top-level function's defining `__module__` and `__qualname__` at declaration time for its fully qualified identity. There is no automatic registration; re-exported public names, arbitrary Callable or class/method Mapping parent/child declarations, and execution of Python functions while parsing source are unsupported. The special `_force` keyword for function Mappings is restricted to side-effect-free constants and removed during normalization.
+`@maps(function)` decorates the parent class, and nested `@signature(...)` declarations with the class attribute `factory = ...` represent individual function signatures. `InterfaceMappingRegistry.from_declarations()` can explicitly convert them into the same `InterfaceFunctionMapping` type as before. `@maps` uses the referenced top-level function's defining `__module__` and `__qualname__` at declaration time for its fully qualified identity. There is no automatic registration; re-exported public names, arbitrary Callable or class/method Mapping parent/child declarations, and execution of Python functions while parsing source are unsupported. The special `_force` keyword for function Mappings is restricted to side-effect-free constants and removed during normalization.
 
 title: Resolve only explicitly registered external API mappings
 
@@ -58,7 +58,7 @@ level: MUST
 
 ## FRT_006
 
-Repeated use of one `PythonFrontend` instance must not carry variable declarations, function or module import aliases, loop depth, or Port object references from one `parse` request into the next.
+Repeated use of one `PythonFrontend` instance must not carry variable declarations, function or module import aliases, loop depth, or mapped-object references from one `parse` request into the next.
 
 title: Isolation of state between parse requests
 
@@ -136,7 +136,7 @@ related: [CST_020](construct.md#cst_020), [CST_021](construct.md#cst_021)
 
 ## FRT_014
 
-Referring to and passing around a typed first-class function value is a different contract from calling that value. Indirect calls are specified separately by FRT_015–016, which lift the restrictions in force up to stage 10. Callable `...`, type inference, unregistered types, Callable shapes containing Ports, rebinding through `nonlocal`, and dynamic manipulation of function attributes remain unsupported. Static reference/capture relationships are retained, but Realization is responsible for function lifetime, call environment, and whether the Target can implement them. Existing `with` and other semantic contracts are unchanged.
+Referring to and passing around a typed first-class function value is a different contract from calling that value. Indirect calls are specified separately by FRT_015–016, which lift the restrictions in force up to stage 10. Callable `...`, type inference, unregistered types, Callable shapes containing mapped types, rebinding through `nonlocal`, and dynamic manipulation of function attributes remain unsupported. Static reference/capture relationships are retained, but Realization is responsible for function lifetime, call environment, and whether the Target can implement them. Existing `with` and other semantic contracts are unchanged.
 
 title: Function-value admission limits and a separate indirect-call contract
 
@@ -206,7 +206,7 @@ related: [CST_027](construct.md#cst_027), [CST_028](construct.md#cst_028)
 
 ## FRT_021
 
-The Frontend rejects unsupported exception features: `except ... as name` binding, bare `except:`, bare `raise` rethrowing, raising arbitrary classes, `raise ... from ...` cause chaining, `except*`/exception groups, multiple or keyword arguments, nonstring messages, and special exception-object operations. New typed bindings or Port rebinding in `try` clauses are also rejected according to existing control-body rules. Control transfers containing `return`, `break`, or `continue` are retained structurally; Python exception execution is not inferred and remains a Realization responsibility. Target Realizations for the new exception Constructs are not registered. Existing `with`, function, expression, and scope semantics are not reinterpreted or changed.
+The Frontend rejects unsupported exception features: `except ... as name` binding, bare `except:`, bare `raise` rethrowing, raising arbitrary classes, `raise ... from ...` cause chaining, `except*`/exception groups, multiple or keyword arguments, nonstring messages, and special exception-object operations. New typed bindings or mapped-object rebinding in `try` clauses are also rejected according to existing control-body rules. Control transfers containing `return`, `break`, or `continue` are retained structurally; Python exception execution is not inferred and remains a Realization responsibility. Target Realizations for the new exception Constructs are not registered. Existing `with`, function, expression, and scope semantics are not reinterpreted or changed.
 
 title: Exception admission limits and unsupported Realizations
 
@@ -396,7 +396,7 @@ related: [CST_045](construct.md#cst_045)
 
 ## FRT_040
 
-An unbound direct `abs(x)` becomes integer `Absolute`; `min(a, b, ...)` and `max(a, b, ...)` become integer `Extremum`. `abs` requires one positional argument; `min` and `max` require at least two; all operands must be strictly `ValueKind.INTEGER`. Operand expressions and argument order are retained and not evaluated by the Frontend. Existing resolution of same-named user-defined functions, function-typed variables, and registered Ports takes precedence.
+An unbound direct `abs(x)` becomes integer `Absolute`; `min(a, b, ...)` and `max(a, b, ...)` become integer `Extremum`. `abs` requires one positional argument; `min` and `max` require at least two; all operands must be strictly `ValueKind.INTEGER`. Operand expressions and argument order are retained and not evaluated by the Frontend. Existing resolution of same-named user-defined functions, function-typed variables, and registered mappings takes precedence.
 
 title: Typed integer normalization of abs, min, and max
 
@@ -436,7 +436,7 @@ related: [CST_049](construct.md#cst_049)
 
 ## FRT_044
 
-If `sum`, `any`, or `all` resolves to an existing function declaration, a typed function variable, or a registered Port, that resolution takes precedence and the call is not intercepted as a built-in operation. Keyword/unpacked arguments, undeclared general Iterables, unsupported element types, and invalid argument counts are rejected explicitly. `IntegerSum` and `BooleanAggregate` Target Realizations are not yet provided; successful Model normalization does not guarantee execution on the Target. Existing semantics for `Range`, `Call`, `With`, `Length`, `Absolute`, and `Extremum` are unchanged.
+If `sum`, `any`, or `all` resolves to an existing function declaration, a typed function variable, or a registered mapping, that resolution takes precedence and the call is not intercepted as a built-in operation. Keyword/unpacked arguments, undeclared general Iterables, unsupported element types, and invalid argument counts are rejected explicitly. `IntegerSum` and `BooleanAggregate` Target Realizations are not yet provided; successful Model normalization does not guarantee execution on the Target. Existing semantics for `Range`, `Call`, `With`, `Length`, `Absolute`, and `Extremum` are unchanged.
 
 title: Name resolution and Target boundaries for aggregate built-ins
 
@@ -486,7 +486,7 @@ related: [CST_056](construct.md#cst_056)
 
 ## FRT_049
 
-Unknown keyword names, duplicate bindings, missing required arguments, type mismatches, excessive positional arguments, and `*args`/`**kwargs` unpacking are rejected without inference. Because `CallableType` has no parameter names, keyword arguments to `FunctionValueCall` remain unsupported. Built-ins, special Port calls, arbitrary default expressions not admitted by FRT_050–051, positional-only or keyword-only parameters, and dynamic function transformations are outside this change. Generation rejects absent Target Realizations. New contracts do not reinterpret existing `With`, numeric, class, or closure semantics.
+Unknown keyword names, duplicate bindings, missing required arguments, type mismatches, excessive positional arguments, and `*args`/`**kwargs` unpacking are rejected without inference. Because `CallableType` has no parameter names, keyword arguments to `FunctionValueCall` remain unsupported. Built-ins, special mapped-function calls, arbitrary default expressions not admitted by FRT_050–051, positional-only or keyword-only parameters, and dynamic function transformations are outside this change. Generation rejects absent Target Realizations. New contracts do not reinterpret existing `With`, numeric, class, or closure semantics.
 
 title: Keyword argument restrictions, static checks, and realization responsibility
 
@@ -626,7 +626,7 @@ related: [CST_065](construct.md#cst_065)
 
 ## FRT_063
 
-`PythonFrontend(intrinsics=IntrinsicRegistry(...))` normalizes only explicitly registered primitive operations, using their resolved static type signatures, into `IntrinsicCall`. When `intrinsics` is omitted, the default provider table from FRT_065 is used. Existing special Constructs for `len`, `abs`, `min`, etc. remain in place; arbitrary Python built-ins or attributes are not automatically admitted. For a direct-name call, same-named declared functions, typed Symbols, Ports, classes, and similar bindings take precedence; only explicitly registered names without such conflicts are treated as intrinsics. For an attribute call, existing static instance methods, `super`, and class methods resolve first. Only remaining statically typed Receivers are matched exactly against `(Receiver type, name)` in the registry. A Receiver is not normalized twice, and positional argument counts and types are checked. Unregistered names, keyword arguments, unpacking, general overload inference, implicit type conversion, and executing arbitrary Python implementation methods are rejected. `convert(intrinsics=...)` can supply an explicit provider table to the Frontend; Realization remains independent and no new recipes are added to standard C/Python Packs.
+`PythonFrontend(intrinsics=IntrinsicRegistry(...))` normalizes only explicitly registered primitive operations, using their resolved static type signatures, into `IntrinsicCall`. When `intrinsics` is omitted, the default provider table from FRT_065 is used. Existing special Constructs for `len`, `abs`, `min`, etc. remain in place; arbitrary Python built-ins or attributes are not automatically admitted. For a direct-name call, same-named declared functions, typed Symbols, mapped names, classes, and similar bindings take precedence; only explicitly registered names without such conflicts are treated as intrinsics. For an attribute call, existing static instance methods, `super`, and class methods resolve first. Only remaining statically typed Receivers are matched exactly against `(Receiver type, name)` in the registry. A Receiver is not normalized twice, and positional argument counts and types are checked. Unregistered names, keyword arguments, unpacking, general overload inference, implicit type conversion, and executing arbitrary Python implementation methods are rejected. `convert(intrinsics=...)` can supply an explicit provider table to the Frontend; Realization remains independent and no new recipes are added to standard C/Python Packs.
 
 title: Registry matching of typed intrinsics and restricted Frontend normalization
 
@@ -646,7 +646,7 @@ related: [CST_067](construct.md#cst_067)
 
 ## FRT_065
 
-By default, `PythonFrontend()` uses `standard_intrinsics()`, normalizing zero-argument `str()`, `int()`, and `float()`, one-argument conversions with explicitly typed `int`/`float`/`str`/`bool` input, and `upper()`/`lower()` on statically typed `str` Receivers into `IntrinsicCall` with selected `IntrinsicDefinition`. Types before and after conversion and individual obligations are determined by provider declarations under CST_068; input Values are not executed, and conversion exceptions or Unicode case expansions are not guessed. Specifying `intrinsics=IntrinsicRegistry(...)` replaces the default table; `standard_intrinsics().extend(...)` permits explicit extension. The precedence of same-named user declarations and existing Ports/classes, rejection of ambiguous candidates, and rejection of keyword/unpacked arguments remain unchanged. Multiargument `int(str, base)`, unregistered types or methods, dynamic conversions, and formatting are not admitted. No corresponding Intrinsic recipes are registered in standard Python/C Target Packs at this stage: constructibility is distinct from the ability to produce output.
+By default, `PythonFrontend()` uses `standard_intrinsics()`, normalizing zero-argument `str()`, `int()`, and `float()`, one-argument conversions with explicitly typed `int`/`float`/`str`/`bool` input, and `upper()`/`lower()` on statically typed `str` Receivers into `IntrinsicCall` with selected `IntrinsicDefinition`. Types before and after conversion and individual obligations are determined by provider declarations under CST_068; input Values are not executed, and conversion exceptions or Unicode case expansions are not guessed. Specifying `intrinsics=IntrinsicRegistry(...)` replaces the default table; `standard_intrinsics().extend(...)` permits explicit extension. The precedence of same-named user declarations and existing mapped names/classes, rejection of ambiguous candidates, and rejection of keyword/unpacked arguments remain unchanged. Multiargument `int(str, base)`, unregistered types or methods, dynamic conversions, and formatting are not admitted. No corresponding Intrinsic recipes are registered in standard Python/C Target Packs at this stage: constructibility is distinct from the ability to produce output.
 
 title: Static normalization of standard conversions and Unicode string operations
 
@@ -676,7 +676,7 @@ related: [CST_071](construct.md#cst_071)
 
 ## FRT_067
 
-The Python Frontend normalizes `ast.Assign` into one `UnpackAssign` only if its single target is a parenthesized or unparenthesized fixed-length tuple consisting entirely of previously declared ordinary typed names. The right-hand side is normalized once; element counts and assignment types are checked from its static `tuple[T1, ...]` shape. `a, b = b, a`, assignment from tuple variables with different element types, and repeated targets are permitted. Implicit declarations of new names, nested/starred/list/attribute/subscript unpacking targets, chained assignment to multiple targets, Port rebinding, and unknown tuple shapes are rejected. Existing Symbols are not recreated after assignment, and the Frontend does not generate Target temporaries. Python/C Packs are not required to provide a corresponding recipe.
+The Python Frontend normalizes `ast.Assign` into one `UnpackAssign` only if its single target is a parenthesized or unparenthesized fixed-length tuple consisting entirely of previously declared ordinary typed names. The right-hand side is normalized once; element counts and assignment types are checked from its static `tuple[T1, ...]` shape. `a, b = b, a`, assignment from tuple variables with different element types, and repeated targets are permitted. Implicit declarations of new names, nested/starred/list/attribute/subscript unpacking targets, chained assignment to multiple targets, mapped-object rebinding, and unknown tuple shapes are rejected. Existing Symbols are not recreated after assignment, and the Frontend does not generate Target temporaries. Python/C Packs are not required to provide a corresponding recipe.
 
 title: Fixed-length tuple unpacking into previously declared names
 
@@ -704,7 +704,7 @@ related: [CST_073](construct.md#cst_073), [CST_004](construct.md#cst_004)
 
 ## FRT_071
 
-Within the bodies of `if`/`else`, `while`/`else`, `for`/`else`, and `with`, an `AnnAssign` declaring a new ordinary value name with an explicit type and initializer is admitted as `Initialize`. Each declaration stays at its execution position in the original `Block`. Only later references/reassignments in the same body, or in control bodies nested inside it, are admitted. References to newly declared names from another branch, a loop's `else`, or after the body are rejected even if Python might bind them, because general path-dependent initialization is not analyzed. This is a restriction on admissible reference positions, not a new Python lexical scope: Symbol ownership paths remain those of existing functions or the module. Existing declared names remain referable and reassignable as before. Capturing a new control-local name or FRT_070 loop variable in a lambda is rejected because its binding lifetime could outlive the body. Function declarations inside control bodies, Port declarations/rebinding, new names directly inside `try`/`except`/`finally`, generic cross-scope alias initialization analysis, and unannotated implicit declarations are not added. No new Constructs or Target recipes are introduced: existing `Block`, `Initialize`, and `Symbol` are reused, with no new semantic-support declarations in standard Packs.
+Within the bodies of `if`/`else`, `while`/`else`, `for`/`else`, and `with`, an `AnnAssign` declaring a new ordinary value name with an explicit type and initializer is admitted as `Initialize`. Each declaration stays at its execution position in the original `Block`. Only later references/reassignments in the same body, or in control bodies nested inside it, are admitted. References to newly declared names from another branch, a loop's `else`, or after the body are rejected even if Python might bind them, because general path-dependent initialization is not analyzed. This is a restriction on admissible reference positions, not a new Python lexical scope: Symbol ownership paths remain those of existing functions or the module. Existing declared names remain referable and reassignable as before. Capturing a new control-local name or FRT_070 loop variable in a lambda is rejected because its binding lifetime could outlive the body. Function declarations inside control bodies, mapped-object declarations/rebinding, new names directly inside `try`/`except`/`finally`, generic cross-scope alias initialization analysis, and unannotated implicit declarations are not added. No new Constructs or Target recipes are introduced: existing `Block`, `Initialize`, and `Symbol` are reused, with no new semantic-support declarations in standard Packs.
 
 title: Typed value declarations confined to a control-flow body
 
@@ -724,7 +724,7 @@ related: [CST_074](construct.md#cst_074), [CST_017](construct.md#cst_017)
 
 ## FRT_072
 
-Only `global name[, ...]` declarations grouped at the beginning of a top-level typed `def`, immediately after any docstring, are accepted. Each name must denote an ordinary `ValueType` variable already initialized with a type at module top level before the function definition. Unknown names, later module declarations, Port types, collisions with parameters, repeated global declarations, typed redeclaration within the same function, and collisions with function names are rejected. The global declaration affects name binding throughout the function scope and adds no executable Construct. Reads and simple `name = value` assignments to declared globals normalize to `Reference`/`Assign` pointing to the original module `Symbol`, retaining existing type compatibility and initialization rules. Scalar augmented assignments to integer/float globals such as `name += value`, as admitted by FRT_060, likewise become `AugAssign` pointing to the same original Symbol, preserving `target_once`, `read_before_rhs`, and `rebind` semantic contracts. Reassigning module variables from an ordinary function requires explicit `global`; without it, an augmented-assignment target is treated as a local binding throughout the function, and undeclared or uninitialized locals are rejected rather than falling back to an outer scope. Assignment to existing declared names inside a conditional is permitted, but a `global` statement inside a control body or in the middle of a function is not. `global` inside nested functions or methods, `nonlocal`, use of global names as `for` targets or typed redeclarations, implicit creation of new module names, and other unsupported Python binding syntax are rejected. Nonscalar augmented assignments such as those on strings and lists remain rejected under FRT_060. `Symbol.scope == ()` and declaration-object identity are preserved; no Python-specific Global Construct is introduced. Correct Target storage of shared state and the side effects and order of function calls are separate obligations; unsupported C Targets continue to fail.
+Only `global name[, ...]` declarations grouped at the beginning of a top-level typed `def`, immediately after any docstring, are accepted. Each name must denote an ordinary `ValueType` variable already initialized with a type at module top level before the function definition. Unknown names, later module declarations, mapped types, collisions with parameters, repeated global declarations, typed redeclaration within the same function, and collisions with function names are rejected. The global declaration affects name binding throughout the function scope and adds no executable Construct. Reads and simple `name = value` assignments to declared globals normalize to `Reference`/`Assign` pointing to the original module `Symbol`, retaining existing type compatibility and initialization rules. Scalar augmented assignments to integer/float globals such as `name += value`, as admitted by FRT_060, likewise become `AugAssign` pointing to the same original Symbol, preserving `target_once`, `read_before_rhs`, and `rebind` semantic contracts. Reassigning module variables from an ordinary function requires explicit `global`; without it, an augmented-assignment target is treated as a local binding throughout the function, and undeclared or uninitialized locals are rejected rather than falling back to an outer scope. Assignment to existing declared names inside a conditional is permitted, but a `global` statement inside a control body or in the middle of a function is not. `global` inside nested functions or methods, `nonlocal`, use of global names as `for` targets or typed redeclarations, implicit creation of new module names, and other unsupported Python binding syntax are rejected. Nonscalar augmented assignments such as those on strings and lists remain rejected under FRT_060. `Symbol.scope == ()` and declaration-object identity are preserved; no Python-specific Global Construct is introduced. Correct Target storage of shared state and the side effects and order of function calls are separate obligations; unsupported C Targets continue to fail.
 
 title: Restricted explicit global rebinding of already declared module variables
 
@@ -737,5 +737,53 @@ related: [CST_002](construct.md#cst_002), [CST_003](construct.md#cst_003), [CST_
 The Frontend separates a top-level `def __pyinto_runtime__():` from the AST before normalization. It does not include that function in the Construct Model and does not normalize or validate syntax inside its body. The hook must be a single, synchronous, zero-argument, undecorated function definition. Duplicate definitions, an identically named class, async function, direct assignment, or a definition with decorators or arguments are rejected. `PythonFrontend.parse()` also excludes this function. All other source declarations remain subject to the ordinary Frontend acceptance rules; the exclusion does not relax type or name-resolution contracts for the rest of the source.
 
 title: Static separation of the runtime magic function
+
+level: MUST
+
+## FRT_075
+
+Kind words are recognized statically only when imported with `from pyinto.kinds.<surface>.<tier> import word [as alias]`. The surfaces are `datatypes` / `memory` / `declarations` and the tiers `general` / `detailed`; each module provides a fixed set of words. A word not in that module, the `import pyinto.kinds...` form, imports from `pyinto.kinds` or one of its surfaces, collisions with builtin type names, and duplicate aliases are rejected. In type positions, `Wide[X]` / `Narrow[X]` / `Unsigned[X]` take the Python-side shape of `X`, `Size` / `Index` / `Byte` / `Int[N]` / `UInt[N]` / `CodeUnit[N]` / `Pointer[T]` / `Enum[T]` of `int`, `Float[N]` / `Decimal[N]` of `float`, `Char` of `str`, `Array[T, N]` and `Buffer[T]` of `list[T]`, `Function[[...], R]` of `Callable[[...], R]`, `Void` / `Nil` / `Null` of `None`, and `Ref[T]` / `Owned[T]` / `Shared[T]` the same shape as `T`, each with a label exactly as written. Sizes and lengths accept only positive integer literals; the Host does not fix any range. Annotations whose argument count or kind does not fit the word's form are rejected.
+
+title: Importing kind words and type annotations
+
+level: MUST
+
+## FRT_076
+
+`Void` / `Nil` / `Null` in value positions normalize to `NoneAlias` and may be used only when assigned to labeled declarations or arguments, or in `==` / `!=` comparisons with labeled values (`NoneAliasComparison`). `Pointer.address(x)` accepts only a bare variable name and normalizes to `AddressOf`; `Pointer.load(p)` takes a `Pointer[T]`-typed value and normalizes to `PointerLoad`; `Pointer.store(p, v)` as a statement normalizes to `PointerStore`. Keyword or unpacked arguments, wrong argument counts, unknown operation names, and `Pointer.store` inside an expression are rejected. Using a type word as a value is also rejected.
+
+title: Normalizing None-alias values and pointer operations
+
+level: MUST
+
+## FRT_077
+
+The initializer of a `Ref[T]` variable, and each argument (including defaults) bound to a `Ref[T]` parameter, must be a bare variable name that is not a mapped object (`Reference`). Expressions and literals are rejected. Later assignments follow the ordinary assignment rules; what writing to or rebinding a `Ref` means is up to the Target.
+
+title: Requiring variable names where Ref types are bound
+
+level: MUST
+
+## FRT_078
+
+A module-level class definition may carry the `pyinto.kinds.declarations.detailed` decorators `@Interface` / `@MixIn` / `@Implements(...)` in any order, in addition to at most one registered class decorator. `Interface` and `MixIn` take no arguments; `Implements` takes one or more names of classes defined earlier in the same module. The class's own name, undefined or later classes, keyword arguments, duplicate words, and type words used as decorators are rejected. These decorators do not relax class acceptance rules (an explicit `__init__`, single inheritance, and so on).
+
+title: Kind class decorators
+
+level: MUST
+
+## FRT_079
+
+An Interface Mapping mapped object is created only by an argument-free `Class.variant()` call. Positional, keyword, and unpacked arguments are rejected, and no numeric range or size is accepted as part of the mapped-object shape. Registered constructors have the form `(Symbol) -> Construct`.
+
+title: Argument-free mapped-object constructors
+
+level: MUST
+
+## FRT_080
+
+`Memory.new(T, value)` / `Memory.new_buffer(T, length, value)` / `Memory.length(h)` / `Memory.borrow(h)` normalize as values, and `Memory.release(h)` / `Memory.resize(h, length)` / `Memory.copy(destination, source)` / `Memory.fill(h, value)` as statements. `T` is read with the same rules as type annotations. The target of `resize` must be a bare variable name. Mismatched value types, missing ownership or `Buffer` labels, non-integer lengths, wrong argument counts, keyword or unpacked arguments, unknown operation names, statement operations inside expressions, and `Memory` used as a type are rejected. The result of `Memory.new` carries the `Owned` label but may also be assigned to a variable declared `Shared`; the ownership kind is read from the declaration.
+
+title: Normalizing dynamic-memory operations
 
 level: MUST

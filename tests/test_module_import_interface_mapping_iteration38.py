@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from demo_ports_pyinto import c_device_bindings, interface_mapping_registry
+from demo_device_pyinto import c_device_bindings, interface_mapping_registry
 
 from pyinto import PythonFrontend, UnsupportedPython, convert
 from pyinto.constructs import Literal, ValueKind
@@ -15,12 +15,12 @@ from pyinto.interface_mapping import InterfaceFunctionMapping, InterfaceMappingR
 @pytest.mark.parametrize(
     "source",
     [
-        "import demo_ports.device\ndemo_ports.device.is_ready()",
-        "import demo_ports.device as dev\ndev.is_ready()",
-        "from demo_ports import device\ndevice.is_ready()",
-        "from demo_ports import device as dev\ndev.is_ready()",
-        "import demo_ports.device as dev\nif dev.is_ready():\n    print('ready')",
-        "import demo_ports.device as dev\nready: bool = dev.is_ready()",
+        "import demo_device.device\ndemo_device.device.is_ready()",
+        "import demo_device.device as dev\ndev.is_ready()",
+        "from demo_device import device\ndevice.is_ready()",
+        "from demo_device import device as dev\ndev.is_ready()",
+        "import demo_device.device as dev\nif dev.is_ready():\n    print('ready')",
+        "import demo_device.device as dev\nready: bool = dev.is_ready()",
     ],
 )
 def test_module_function_call_uses_existing_mapping(source: str) -> None:
@@ -34,11 +34,11 @@ def test_module_function_call_uses_existing_mapping(source: str) -> None:
 
 def test_all_import_spellings_produce_equal_model() -> None:
     sources = (
-        "from demo_ports.device import is_ready\nready: bool = is_ready()",
-        "from demo_ports.device import is_ready as ready_fn\nready: bool = ready_fn()",
-        "import demo_ports.device\nready: bool = demo_ports.device.is_ready()",
-        "import demo_ports.device as lib\nready: bool = lib.is_ready()",
-        "from demo_ports import device as lib\nready: bool = lib.is_ready()",
+        "from demo_device.device import is_ready\nready: bool = is_ready()",
+        "from demo_device.device import is_ready as ready_fn\nready: bool = ready_fn()",
+        "import demo_device.device\nready: bool = demo_device.device.is_ready()",
+        "import demo_device.device as lib\nready: bool = lib.is_ready()",
+        "from demo_device import device as lib\nready: bool = lib.is_ready()",
     )
     parser = PythonFrontend(interface_mapping_registry())
     programs = [parser.parse(source) for source in sources]
@@ -94,68 +94,68 @@ def test_nested_module_function_lookups() -> None:
             "Unregistered interface mapping module",
         ),
         (
-            "import demo_ports.device as d\nd.unknown()",
+            "import demo_device.device as d\nd.unknown()",
             "Unregistered interface mapping call",
         ),
         (
-            "import demo_ports.device as d\nd.extra.is_ready()",
+            "import demo_device.device as d\nd.extra.is_ready()",
             "not explicitly imported",
         ),
-        ("from demo_ports import unknown", "Unregistered interface mapping import"),
-        ("from demo_ports import *", "Unregistered interface mapping import"),
-        ("import demo_ports.device as print", "Duplicate or reserved import alias"),
-        ("import demo_ports.device as d\nd: int = 1", "Cannot shadow"),
+        ("from demo_device import unknown", "Unregistered interface mapping import"),
+        ("from demo_device import *", "Unregistered interface mapping import"),
+        ("import demo_device.device as print", "Duplicate or reserved import alias"),
+        ("import demo_device.device as d\nd: int = 1", "Cannot shadow"),
         (
-            "import demo_ports.device as d\ndef d() -> int:\n    return 1",
+            "import demo_device.device as d\ndef d() -> int:\n    return 1",
             "Duplicate or reserved function name",
         ),
         (
-            "import demo_ports.device as d\nclass d:\n    pass",
+            "import demo_device.device as d\nclass d:\n    pass",
             "Duplicate or reserved class name",
         ),
         (
-            "import demo_ports.device as d\ndef f(d: int) -> int:\n    return d",
+            "import demo_device.device as d\ndef f(d: int) -> int:\n    return d",
             "Reserved",
         ),
         (
-            "import demo_ports.device as d\nfor d in range(2):\n    print('x')",
+            "import demo_device.device as d\nfor d in range(2):\n    print('x')",
             "reserved",
         ),
-        # Rebinding a Port alias must stay rejected. It is currently rejected
+        # Rebinding a mapped-object alias must stay rejected. It is currently rejected
         # by the general "explicit type annotation" rule rather than by a
-        # Port-specific check; revisit this expectation if that rule changes.
-        ("import demo_ports.device as d\nd = 1", "explicit type annotation"),
+        # mapped-object-specific check; revisit this expectation if that rule changes.
+        ("import demo_device.device as d\nd = 1", "explicit type annotation"),
         (
-            "import demo_ports.device\nfrom demo_ports.device import is_ready as demo_ports",
+            "import demo_device.device\nfrom demo_device.device import is_ready as demo_device",
             "Duplicate or reserved import alias",
         ),
         (
-            "import demo_ports.device as d\nfrom typing import Any as d",
+            "import demo_device.device as d\nfrom typing import Any as d",
             "Conflicting type import",
         ),
         (
-            "import demo_ports.device as d\nfrom demo_ports.device import is_ready as d",
+            "import demo_device.device as d\nfrom demo_device.device import is_ready as d",
             "Duplicate or reserved import alias",
         ),
         (
-            "from demo_ports.device import is_ready as d\nimport demo_ports.device as d",
+            "from demo_device.device import is_ready as d\nimport demo_device.device as d",
             "Duplicate or reserved import alias",
         ),
-        ("import demo_ports.device as d\nd.is_ready(1)", "argument count"),
-        ("import demo_ports.device as d\nd.is_ready(value=1)", "Only the reserved"),
-        ("import demo_ports.device as d\nresult: int = d.is_ready()", "type"),
+        ("import demo_device.device as d\nd.is_ready(1)", "argument count"),
+        ("import demo_device.device as d\nd.is_ready(value=1)", "Only the reserved"),
+        ("import demo_device.device as d\nresult: int = d.is_ready()", "type"),
         (
-            "import demo_ports.device as d\nx: int = 1\nx = d.is_ready()",
+            "import demo_device.device as d\nx: int = 1\nx = d.is_ready()",
             "Variable type cannot change",
         ),
-        ("x: int = 1\nimport demo_ports.device as d", "Unsupported statement"),
+        ("x: int = 1\nimport demo_device.device as d", "Unsupported statement"),
         (
-            "def f() -> int:\n    import demo_ports.device\n    return 1",
+            "def f() -> int:\n    import demo_device.device\n    return 1",
             "Unsupported statement",
         ),
         ("from . import device", "Only explicit absolute"),
         (
-            "from demo_ports.device import is_ready\nis_ready.other()",
+            "from demo_device.device import is_ready\nis_ready.other()",
             "Unregistered interface mapping object",
         ),
     ],
@@ -167,11 +167,11 @@ def test_rejects_unregistered_or_shadowed_calls(source: str, message: str) -> No
 
 def test_per_parse_reset_after_success_and_failure() -> None:
     parser = PythonFrontend(interface_mapping_registry())
-    parser.parse("import demo_ports.device as d\nd.is_ready()")
+    parser.parse("import demo_device.device as d\nd.is_ready()")
     with pytest.raises(UnsupportedPython):
         parser.parse("d.is_ready()")
     with pytest.raises(UnsupportedPython):
-        parser.parse("import demo_ports.device as d\nd.missing()")
+        parser.parse("import demo_device.device as d\nd.missing()")
     with pytest.raises(UnsupportedPython):
         parser.parse("d.is_ready()")
 
@@ -179,9 +179,9 @@ def test_per_parse_reset_after_success_and_failure() -> None:
 def test_module_name_is_not_implicitly_callable_or_value() -> None:
     parser = PythonFrontend(interface_mapping_registry())
     for source in (
-        "import demo_ports.device as d\nd()",
-        "import demo_ports.device as d\nn: int = d",
-        "import demo_ports.device as d\nn: int = d.is_ready",
+        "import demo_device.device as d\nd()",
+        "import demo_device.device as d\nn: int = d",
+        "import demo_device.device as d\nn: int = d.is_ready",
     ):
         with pytest.raises(UnsupportedPython):
             parser.parse(source)
@@ -247,13 +247,13 @@ def test_native_c_generation_for_module_import(tmp_path: Path) -> None:
     cc = shutil.which("gcc") or shutil.which("clang")
     if cc is None:
         pytest.skip("No C compiler")
-    source = "import demo_ports.device as dev\nif dev.is_ready():\n    print('ready')"
+    source = "import demo_device.device as dev\nif dev.is_ready():\n    print('ready')"
     emitted = convert(
         source,
         realizations=c_device_bindings(),
         interface_mappings=interface_mapping_registry(),
     )
-    root = Path(__file__).resolve().parents[1] / "examples" / "port_demo"
+    root = Path(__file__).resolve().parents[1] / "examples" / "mapping_demo"
     c_file = tmp_path / "generated.c"
     c_file.write_text(emitted, encoding="utf-8")
     binary = tmp_path / "app"

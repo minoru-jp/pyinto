@@ -11,6 +11,6 @@ Canonical source: `devdocs/canonical_sources/specification/__init__.py`
 | Document | Summary |
 | --- | --- |
 | [Construct Model](construct.md) | 実装済み Construct の構造・型・子要素・制御構造の契約と、未整理の境界。 |
-| [Python Frontend](frontend.md) | Python Frontend が現在受理する入力、型宣言規則、Port 登録と明示的な拒否。 |
+| [Python Frontend](frontend.md) | Python Frontend が現在受理する入力、型宣言規則、Interface Mapping の登録と明示的な拒否。 |
 | [Composition](composition.md) | Realization API による実現規則の解決、Template／Slot 合成、Render の実装済み規則。 |
 | [Conversion API](conversion.md) | 明示された実現規則を使う、Model 外の Python 変換入口。 |
