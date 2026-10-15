@@ -1,7 +1,7 @@
 """Public example: one restricted Python mini-language, two artifact Targets.
 
 Run from a checkout: PYTHONPATH=src python examples/runtime_trace.py
-Only trusted Python source may be used with runtime-enabled Targets.
+Only trusted Python source may be used with execution Targets.
 """
 
 from __future__ import annotations
@@ -76,7 +76,7 @@ class OutlinePack:
     dispatch = "structural"
     semantics = "projection"
     unhandled = "traverse"
-    runtime = "ignored"
+    purpose = "inspection"
     entries = (ForOutline, BranchOutline)
     session = OutlineSession
 
@@ -86,6 +86,7 @@ class TracePack:
     dispatch = "structural"
     semantics = "projection"
     unhandled = "traverse"
+    purpose = "execution"
     runtime = "required"
     runtime_schema = trace_schema
     entries = (ForOutline, BranchOutline)

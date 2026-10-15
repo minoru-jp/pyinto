@@ -59,6 +59,7 @@ PACK_FIELDS: dict[str, Field] = {
     "session": Field(),
     "semantics": Field(str),
     "unhandled": Field(str),
+    "purpose": Field(str),
     "runtime": Field(str),
     "runtime_schema": Field(),
 }
@@ -200,6 +201,46 @@ def _entry_validity(item: Declaration) -> Iterator[str]:
             yield "Requirement line only accepts ${name}"
 
 
+PURPOSES = ("conversion", "inspection", "execution")
+"""What a Target does with a Source: convert it, inspect it, or execute it."""
+
+RUNTIME_POLICIES = ("required", "optional")
+"""How an execution Target needs ``__pyinto_runtime__``."""
+
+
+def purpose_errors(
+    purpose: str,
+    runtime: str | None,
+    *,
+    semantics: str,
+    has_session: bool,
+    has_schema: bool,
+) -> Iterator[str]:
+    """Check a Target's purpose and its runtime declarations together.
+
+    Only an execution Target executes the Source, so only it may declare
+    ``runtime`` and ``runtime_schema``. An inspection Target reads a Source
+    without promising its meaning, so it must declare projection semantics.
+    """
+    if purpose not in PURPOSES:
+        yield "Invalid Target purpose"
+        return
+    if purpose == "execution":
+        if runtime is None:
+            yield "Execution Target needs runtime 'required' or 'optional'"
+        elif runtime not in RUNTIME_POLICIES:
+            yield "Invalid Target runtime policy"
+        if not has_session:
+            yield "Execution Target needs an artifact session"
+    else:
+        if runtime is not None:
+            yield "Target runtime policy needs execution purpose"
+        if has_schema:
+            yield "Runtime schema needs execution purpose"
+    if purpose == "inspection" and semantics != "projection":
+        yield "Inspection Target needs projection semantics"
+
+
 def _pack_validity(item: Declaration) -> Iterator[str]:
     if not item.has("target") or not item.value("target"):
         yield "Target Pack missing target"
@@ -219,28 +260,17 @@ def _pack_validity(item: Declaration) -> Iterator[str]:
         dispatch != "structural" or semantics != "projection"
     ):
         yield "Unhandled traverse needs structural dispatch and projection semantics"
-    if item.has("runtime") and item.value("runtime") not in (
-        "required",
-        "forbidden",
-        "optional",
-        "ignored",
+    yield from purpose_errors(
+        cast(str, item.value("purpose")) if item.has("purpose") else "conversion",
+        cast(str, item.value("runtime")) if item.has("runtime") else None,
+        semantics=cast(str, semantics),
+        has_session=item.has("session"),
+        has_schema=item.has("runtime_schema"),
+    )
+    if item.has("runtime_schema") and not is_runtime_schema(
+        item.value("runtime_schema")
     ):
-        yield "Invalid Target runtime policy"
-    if (
-        item.has("runtime")
-        and item.value("runtime") in ("required", "optional")
-        and not item.has("session")
-    ):
-        yield "Runtime-enabled Target needs an artifact session"
-    if item.has("runtime_schema"):
-        schema = item.value("runtime_schema")
-        if not is_runtime_schema(schema):
-            yield "Runtime schema must be a type or a callable validator"
-        if (item.value("runtime") if item.has("runtime") else "ignored") not in (
-            "required",
-            "optional",
-        ):
-            yield "Runtime schema needs required or optional runtime policy"
+        yield "Runtime schema must be a type or a callable validator"
     if item.has("session") and not callable(item.value("session")):
         yield "Artifact session factory must be callable"
     if (

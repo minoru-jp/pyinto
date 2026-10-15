@@ -254,17 +254,29 @@ output: frozenset[str] | None
 
 detail: 正確な一覧はConstruct/Variant Reference参照
 
+## API_028
+
+TargetがSourceをどう扱うかの宣言。変換・読み取り・実行のいずれかで、Dispatchとは独立である。
+
+name: purpose
+
+kind: Value
+
+input: 'conversion'（既定） / 'inspection' / 'execution'
+
+detail: conversion: 変換目的。__pyinto_runtime__ があれば拒否し、finish()。inspection: 読み取り目的。__pyinto_runtime__ があっても受理し、実行せずfinish()。semantics = 'projection' が必須。execution: 実行目的。runtime の宣言が必須で、カスタムSessionも必須。
+
 ## API_022
 
-Runtime情報経路の利用宣言。Dispatch/Semanticsとは独立であり、省略した既存Packは無視する。
+実行目的のTargetが __pyinto_runtime__ をどう必要とするかの宣言。purpose = 'execution' のときだけ宣言でき、そのときは省略できない。
 
 name: runtime
 
 kind: Value
 
-input: 'required' / 'forbidden' / 'optional' / 'ignored'（既定）
+input: 'required' / 'optional'
 
-detail: required: 関数必須・実行してfinish(R)。forbidden: 存在を拒否。optional: あれば実行してfinish(R)、なければfinish(RUNTIME_ABSENT)。ignored: 存在は許可し、実行せずfinish()。required/optionalではカスタムSessionが必須。
+detail: required: 関数必須・実行してfinish(R)。optional: あれば実行してfinish(R)、なければfinish(RUNTIME_ABSENT)。conversion / inspection で宣言すると登録時に拒否する。
 
 ## API_023
 
@@ -276,9 +288,9 @@ kind: Operation
 
 input: 信頼済み入力モジュールに同期・無引数のトップレベルdefを宣言。RUNTIME_ABSENTはpyinto.realizationsからimport。
 
-output: Runtimeがあるrequired/optionalでは戻り値R。optionalで関数がない場合はRUNTIME_ABSENT。
+output: executionのTargetでは戻り値R。optionalで関数がない場合はRUNTIME_ABSENT。
 
-detail: realize(model)はソースを持たずrequiredでは拒否。Runtimeが不要なTargetのSessionは従来のfinish()を維持。
+detail: realize(model)はソースを持たずrequiredでは拒否。conversion / inspection のTargetのSessionは引数なしのfinish()を呼ばれる。
 
 ## API_024
 
@@ -290,7 +302,7 @@ kind: Value
 
 input: type | Callable[[object], bool]。例: runtime_schema = ResultType または runtime_schema = validate_result
 
-detail: required/optionalでのみ宣言可能。typeは単純なisinstance判定。list[int]等のジェネリック式とUnion式は不可。複雑な型・値の条件は検証関数で表す。, 検証関数の引数はRひとつで、戻り値は厳密なbool。偽、不正戻り値、検証例外はRuntimeSchemaErrorとなり、Session.finish()を呼ばない。optionalの不在時は検証せず、Noneは検証する。
+detail: purpose = 'execution' でのみ宣言可能。typeは単純なisinstance判定。list[int]等のジェネリック式とUnion式は不可。複雑な型・値の条件は検証関数で表す。, 検証関数の引数はRひとつで、戻り値は厳密なbool。偽、不正戻り値、検証例外はRuntimeSchemaErrorとなり、Session.finish()を呼ばない。optionalの不在時は検証せず、Noneは検証する。
 
 ## API_025
 

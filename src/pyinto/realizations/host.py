@@ -45,11 +45,17 @@ class RealizationHost:
         self.admission.require_baseline(LANGUAGE_ADMISSION)
 
     def check_runtime(self, present: bool) -> None:
-        """Validate the selected Target's presence contract before dispatch."""
+        """Validate the selected Target's purpose against the Source before dispatch.
+
+        A conversion Target converts the Source and has no use for an
+        execution hook; an inspection Target reads it without executing.
+        """
+        if self.registry.purpose == "conversion" and present:
+            raise ValueError(
+                "Conversion Target rejects __pyinto_runtime__ in the source"
+            )
         if self.registry.runtime == "required" and not present:
             raise ValueError("Target requires __pyinto_runtime__ in the source")
-        if self.registry.runtime == "forbidden" and present:
-            raise ValueError("Target forbids __pyinto_runtime__ in the source")
 
     def run(self, root: Construct, *, runtime_source: str | None = None) -> object:
         self.check_runtime(runtime_source is not None)
@@ -76,9 +82,9 @@ class RealizationHost:
                 self.registry, admission=self.admission, root=root, session=session
             )
             self._walk(root, context)
-        # No source is executed for purely static Targets. Optional absence is
+        # Only execution Targets execute the source. Optional absence is
         # signalled explicitly, so a hook returning None remains unambiguous.
-        if self.registry.runtime in ("required", "optional"):
+        if self.registry.purpose == "execution":
             result = (
                 execute_runtime(runtime_source)
                 if runtime_source is not None

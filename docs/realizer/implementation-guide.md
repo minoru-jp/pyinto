@@ -2,7 +2,7 @@
 
 ## Audience and prerequisites
 
-This guide is for authors of independent Realizers using the **pyinto 0.2.0 Alpha Host**. The task is not to manipulate the Python AST directly. Instead, receive the Construct Model normalized by the Frontend through the Host's dispatch rules and return artifacts owned by the Target.
+This guide is for authors of independent Realizers using the **pyinto 0.3.0 Alpha Host**. The task is not to manipulate the Python AST directly. Instead, receive the Construct Model normalized by the Frontend through the Host's dispatch rules and return artifacts owned by the Target.
 
 **Evidence priority:** public API signatures, [Declaration Reference](declaration-reference.md), [Construct / Variant Reference](construct-reference.md), [Admission Reference](admission-reference.md), and the [Specification](../specification/INDEX.md). The C/Python Realizers in `tests/support/` are reference implementations, not Host-distributed packages. Do **not** invent APIs, variants, contracts, or support for unknown features.
 

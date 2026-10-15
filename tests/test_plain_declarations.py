@@ -62,6 +62,7 @@ def test_declaration_names_are_the_documented_sets() -> None:
         "session",
         "semantics",
         "unhandled",
+        "purpose",
         "runtime",
         "runtime_schema",
     }

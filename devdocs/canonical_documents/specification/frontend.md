@@ -794,3 +794,11 @@ level: MUST
 title: 動的メモリの操作の正規化
 
 level: MUST
+
+## FRT_081
+
+トップレベルの `__pyinto_runtime__` を定義したSourceは、`pyinto.kinds` とその下のモジュールを import できない。`__pyinto_runtime__` があるSourceは実行され得るが、Kindの語彙は変換のための記述であり実行を想定しないためである。`from ... import` と `import` のどちらの形も、`__pyinto_runtime__` の本体の中の import も対象とする。この規則はSource自体の矛盾を示すものであり、選択したTargetの目的に関係なく、`PythonFrontend.parse` でも `convert()` でも、Pythonを実行する前に `UnsupportedPython` で拒否する。`__pyinto_runtime__` のないSourceでのKindの利用は従来どおりである。
+
+title: Runtime関数とKindの併用禁止
+
+level: MUST

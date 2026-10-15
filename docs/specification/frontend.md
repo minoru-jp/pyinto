@@ -787,3 +787,11 @@ level: MUST
 title: Normalizing dynamic-memory operations
 
 level: MUST
+
+## FRT_081
+
+A Source that defines a top-level `__pyinto_runtime__` cannot import `pyinto.kinds` or any module under it. A Source with `__pyinto_runtime__` may be executed, whereas the kind vocabulary is a description for conversion and is not meant to be executed. Both `from ... import` and `import` forms are covered, including imports inside the body of `__pyinto_runtime__`. The rule marks a contradiction in the Source itself, so whatever the purpose of the selected Target, both `PythonFrontend.parse` and `convert()` reject it with `UnsupportedPython` before any Python is executed. Using kinds in a Source without `__pyinto_runtime__` is unchanged.
+
+title: Runtime hook and kinds cannot be combined
+
+level: MUST

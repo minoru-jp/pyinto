@@ -88,9 +88,9 @@ Since a modeled library interface does not have to depend on a particular langua
 
 ### Generating artifacts from Python syntax and module execution results
 
-Rather than seeing restricted Python code as a disadvantage, it can be used positively as a **mini-language**. Only when a Target requires `__pyinto_runtime__` does the Host execute the source as ordinary Python. The static information obtained through AST analysis and the dynamic state obtained by that execution are combined to produce final artifacts.
+Rather than seeing restricted Python code as a disadvantage, it can be used positively as a **mini-language**. Only when an execution Target (`purpose = "execution"`) is selected does the Host execute the source as ordinary Python. The static information obtained through AST analysis and the dynamic state obtained by that execution are combined to produce final artifacts.
 
-A function defined with the name `__pyinto_runtime__` has a special meaning within the module and is excluded from AST analysis. Its return value is supplied by the Host when the Realizer produces the final artifact, allowing that information to be reflected in the artifact.
+A function defined with the name `__pyinto_runtime__` has a special meaning within the module and is excluded from AST analysis. Its return value is supplied by the Host when the Realizer produces the final artifact, allowing that information to be reflected in the artifact. Because such a source is executed, a source that defines `__pyinto_runtime__` cannot use `pyinto.kinds`, the vocabulary for conversion.
 
 ### Kind vocabulary (`pyinto.kinds`)
 

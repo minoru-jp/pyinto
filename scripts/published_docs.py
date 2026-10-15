@@ -171,8 +171,8 @@ def translated_status_errors(original: str, english: str) -> list[str]:
     headings = (
         ("開発段階", "Development stage"),
         (
-            "現在の公開・開発構成（0.2.0）",
-            "Current distribution and development structure (0.2.0)",
+            "現在の公開・開発構成（0.3.0）",
+            "Current distribution and development structure (0.3.0)",
         ),
         ("実装済み", "Implemented"),
         ("未実装・制限", "Unimplemented features and limitations"),

@@ -3,6 +3,26 @@
 Release notes for each published version, followed by prior development history.
 
 
+## 0.3.0 (Alpha)
+
+Targets declare their purpose (conversion, inspection, or execution), and a runtime hook and kinds can no longer share a Source.
+
+version: 0.3.0
+
+Changed:
+
+- Narrowed the Target Pack `runtime` declaration to the two values `required` / `optional`, which may be written only with the new declaration `purpose = "execution"` (CVT_005, CVT_007). `runtime` cannot be omitted with `execution`, and writing it with `conversion` / `inspection` is rejected at registration. `runtime_schema` may also be declared only with `execution`. The `runtime` argument of `RealizationRegistry` now defaults to `None`, and the attribute `purpose` was added.
+- Changed the default behavior of a Target Pack from the former `ignored`, which silently dropped `__pyinto_runtime__` and converted, to `conversion`, which rejects `__pyinto_runtime__` (CVT_005).
+
+Added:
+
+- Added the Target Pack declaration `purpose` (CVT_005, CVT_006, CVT_007). `conversion` (the default) is for conversion and rejects `__pyinto_runtime__`; `inspection` is for reading and accepts `__pyinto_runtime__` without executing it; `execution` is for execution and requires `runtime`. `inspection` requires `semantics = "projection"`.
+- Added a rule that rejects importing `pyinto.kinds` in a Source that defines `__pyinto_runtime__` with `UnsupportedPython`, whatever the purpose of the Target (FRT_081). Imports inside the body of `__pyinto_runtime__` are covered, and both `PythonFrontend.parse` and `convert()` reject it before any Python is executed.
+
+Removed:
+
+- Removed the `runtime` values `forbidden` and `ignored`. Replace `forbidden` with `purpose = "conversion"` (the default) and `ignored` with `purpose = "inspection"`.
+
 ## 0.2.0 (Alpha)
 
 Target declarations become plain class attributes, the kind vocabulary (types, memory, declarations) is added, terminology is organized, and the Host drops its runtime dependency, integer constraints, and the memory demo.

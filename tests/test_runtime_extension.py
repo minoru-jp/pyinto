@@ -55,6 +55,8 @@ def registry(
     dispatch: str = "structural",
     session: type[Any] | None = None,
 ) -> RealizationRegistry:
+    """``policy`` is a purpose, or an execution runtime policy."""
+    executes = policy in ("required", "optional")
     return RealizationRegistry(
         "runtime-test",
         (ProgramVisitor,) if dispatch == "structural" else (ProgramTemplate,),
@@ -63,10 +65,9 @@ def registry(
         unhandled="traverse" if dispatch == "structural" else "error",
         session_factory=session
         if session is not None
-        else (
-            StaticSession if policy in ("forbidden", "ignored") else StructuralSession
-        ),
-        runtime=policy,
+        else (StructuralSession if executes else StaticSession),
+        purpose="execution" if executes else policy,
+        runtime=policy if executes else None,
     )
 
 
@@ -99,16 +100,16 @@ def test_required_runtime_receives_result_after_dispatch(dispatch: str) -> None:
         assert result == (["composition", "finish"], {"value": 2})
 
 
-@pytest.mark.parametrize("policy", ["required", "forbidden", "optional", "ignored"])
+@pytest.mark.parametrize("policy", ["conversion", "inspection", "required", "optional"])
 @pytest.mark.parametrize("present", [False, True])
-def test_all_policy_presence_combinations(policy: str, present: bool) -> None:
+def test_all_purpose_presence_combinations(policy: str, present: bool) -> None:
     source = RUNTIME_SOURCE if present else "x: int = 2"
     selected = registry(policy)
     if policy == "required" and not present:
         with pytest.raises(ValueError, match="requires __pyinto_runtime__"):
             convert(source, realizations=selected)
-    elif policy == "forbidden" and present:
-        with pytest.raises(ValueError, match="forbids __pyinto_runtime__"):
+    elif policy == "conversion" and present:
+        with pytest.raises(ValueError, match="Conversion Target rejects"):
             convert(source, realizations=selected)
     else:
         result = convert(source, realizations=selected)
@@ -127,7 +128,7 @@ def test_optional_absence_is_distinct_from_none() -> None:
     assert with_none[1] is None
 
 
-def test_pack_policy_declaration_and_default() -> None:
+def test_pack_purpose_declaration_and_default() -> None:
     class RuntimePack:
         target = "structural-result"
         dispatch = "structural"
@@ -135,44 +136,122 @@ def test_pack_policy_declaration_and_default() -> None:
         unhandled = "traverse"
         entries = (ProgramVisitor,)
         session = StructuralSession
+        purpose = "execution"
         runtime = "required"
 
-    class LegacyPack:
-        target = "legacy"
+    class DefaultPack:
+        target = "default"
         dispatch = "structural"
         semantics = "projection"
         unhandled = "traverse"
         entries = (ProgramVisitor,)
         session = StaticSession
 
-    assert RealizationRegistry.from_pack(RuntimePack).runtime == "required"
-    assert RealizationRegistry.from_pack(LegacyPack).runtime == "ignored"
-    with pytest.raises(ValueError, match="Invalid Target runtime policy"):
+    executing = RealizationRegistry.from_pack(RuntimePack)
+    assert (executing.purpose, executing.runtime) == ("execution", "required")
+    default = RealizationRegistry.from_pack(DefaultPack)
+    assert (default.purpose, default.runtime) == ("conversion", None)
+    with pytest.raises(ValueError, match="Invalid Target purpose"):
         registry("invalid")
 
-    class InvalidPack:
+    class InvalidPurposePack:
         target = "bad"
         entries = ()
+        purpose = "unknown"
+
+    class InvalidRuntimePack:
+        target = "bad"
+        entries = ()
+        session = StructuralSession
+        purpose = "execution"
         runtime = "unknown"
 
+    with pytest.raises(ValueError, match="Invalid Target purpose"):
+        RealizationRegistry.from_pack(InvalidPurposePack)
     with pytest.raises(ValueError, match="Invalid Target runtime policy"):
-        RealizationRegistry.from_pack(InvalidPack)
+        RealizationRegistry.from_pack(InvalidRuntimePack)
+    with pytest.raises(ValueError, match="Invalid Target runtime policy"):
+        RealizationRegistry(
+            "bad",
+            (ProgramTemplate,),
+            purpose="execution",
+            runtime="ignored",
+            session_factory=StructuralSession,
+        )
+
+
+@pytest.mark.parametrize("old", ["forbidden", "ignored"])
+def test_removed_runtime_policies_are_rejected(old: str) -> None:
+    class OldPack:
+        target = "old"
+        entries = ()
+        runtime = old
+
+    with pytest.raises(ValueError, match="runtime policy needs execution purpose"):
+        RealizationRegistry.from_pack(OldPack)
+    with pytest.raises(ValueError, match="runtime policy needs execution purpose"):
+        RealizationRegistry("old", (), runtime=old)
+
+
+@pytest.mark.parametrize("purpose", ["conversion", "inspection"])
+def test_runtime_declarations_need_execution_purpose(purpose: str) -> None:
+    class NonExecutingPack:
+        target = "bad"
+        entries = ()
+        semantics = "projection"
+        session = StructuralSession
+        purpose = "conversion"
+        runtime = "required"
+
+    NonExecutingPack.purpose = purpose  # type: ignore[assignment]
+    with pytest.raises(ValueError, match="runtime policy needs execution purpose"):
+        RealizationRegistry.from_pack(NonExecutingPack)
+
+
+def test_execution_purpose_needs_a_runtime_policy() -> None:
+    class NoPolicyPack:
+        target = "bad"
+        entries = ()
+        session = StructuralSession
+        purpose = "execution"
+
+    with pytest.raises(ValueError, match="needs runtime 'required' or 'optional'"):
+        RealizationRegistry.from_pack(NoPolicyPack)
+    with pytest.raises(ValueError, match="needs runtime 'required' or 'optional'"):
+        RealizationRegistry(
+            "bad", (), purpose="execution", session_factory=StructuralSession
+        )
+
+
+def test_inspection_purpose_needs_projection_semantics() -> None:
+    class PreservingInspectionPack:
+        target = "bad"
+        entries = (ProgramTemplate,)
+        purpose = "inspection"
+
+    with pytest.raises(ValueError, match="Inspection Target needs projection"):
+        RealizationRegistry.from_pack(PreservingInspectionPack)
+    with pytest.raises(ValueError, match="Inspection Target needs projection"):
+        RealizationRegistry("bad", (ProgramTemplate,), purpose="inspection")
+    inspecting = RealizationRegistry(
+        "inspect", (ProgramTemplate,), purpose="inspection", semantics="projection"
+    )
+    assert inspecting.purpose == "inspection" and inspecting.runtime is None
 
 
 def test_runtime_pack_requires_explicit_compatible_session() -> None:
     class NoSessionPack:
         target = "bad"
         entries = (ProgramTemplate,)
+        purpose = "execution"
         runtime = "required"
 
-    with pytest.raises(
-        ValueError, match="Runtime-enabled Target needs an artifact session"
-    ):
+    with pytest.raises(ValueError, match="Execution Target needs an artifact session"):
         RealizationRegistry.from_pack(NoSessionPack)
-    with pytest.raises(
-        ValueError, match="Runtime-enabled Target needs an artifact session"
-    ):
-        RealizationRegistry("bad", (ProgramTemplate,), runtime="optional")
+    with pytest.raises(ValueError, match="Execution Target needs an artifact session"):
+        RealizationRegistry(
+            "bad", (ProgramTemplate,), purpose="execution", runtime="optional"
+        )
 
 
 def test_realize_model_only_works_for_optional_but_not_required() -> None:
@@ -211,12 +290,13 @@ def __pyinto_runtime__():
         semantics="projection",
         unhandled="traverse",
         session_factory=ResultSession,
+        purpose="execution",
         runtime="required",
     )
     assert convert(source, realizations=selected) == 42
 
 
-def test_ignored_does_not_execute_trusted_source(tmp_path: Path) -> None:
+def test_inspection_reads_but_does_not_execute_trusted_source(tmp_path: Path) -> None:
     marker = tmp_path / "not_created"
     source = f"""
 x: int = 1
@@ -225,7 +305,7 @@ def __pyinto_runtime__():
     from pathlib import Path
     Path({str(marker)!r}).write_text("not allowed")
 """
-    assert convert(source, realizations=registry("ignored")) == ["visit", "finish"]
+    assert convert(source, realizations=registry("inspection")) == ["visit", "finish"]
     assert not marker.exists()
 
 
@@ -239,8 +319,8 @@ def __pyinto_runtime__():
     Path({str(marker)!r}).write_text("no")
     return 0
 """
-    with pytest.raises(ValueError, match="forbids"):
-        convert(source, realizations=registry("forbidden"))
+    with pytest.raises(ValueError, match="Conversion Target rejects"):
+        convert(source, realizations=registry("conversion"))
     with pytest.raises(ConstructError, match="No 'runtime-test' realization"):
         convert(
             source,
@@ -249,6 +329,7 @@ def __pyinto_runtime__():
                 (),
                 dispatch="structural",
                 session_factory=StructuralSession,
+                purpose="execution",
                 runtime="required",
             ),
         )
@@ -277,7 +358,7 @@ def test_bad_magic_definition_is_rejected(definition: str, error: str) -> None:
     with pytest.raises((ValueError, TypeError), match=error):
         PythonFrontend().parse(definition)
     with pytest.raises((ValueError, TypeError), match=error):
-        convert(definition, realizations=registry("ignored"))
+        convert(definition, realizations=registry("inspection"))
 
 
 def test_runtime_detection_is_top_level_only() -> None:
@@ -336,6 +417,7 @@ def test_runtime_schema_type_from_pack_and_direct_registry() -> None:
         unhandled = "traverse"
         entries = (ProgramVisitor,)
         session = StructuralSession
+        purpose = "execution"
         runtime = "required"
         runtime_schema = dict
 
@@ -347,6 +429,7 @@ def test_runtime_schema_type_from_pack_and_direct_registry() -> None:
         realizations=RealizationRegistry(
             "schema-type-direct",
             (ProgramTemplate,),
+            purpose="execution",
             runtime="required",
             runtime_schema=dict,
             session_factory=StructuralSession,
@@ -372,6 +455,7 @@ def test_schema_rejects_before_finish_for_both_dispatches(dispatch: str) -> None
         dispatch=dispatch,
         semantics="projection",
         unhandled="traverse" if dispatch == "structural" else "error",
+        purpose="execution",
         runtime="required",
         runtime_schema=list,
         session_factory=FinishMustNotRun,
@@ -397,6 +481,7 @@ def test_schema_validator_checks_nested_values_and_preserves_identity() -> None:
         unhandled = "traverse"
         entries = (ProgramVisitor,)
         session = StructuralSession
+        purpose = "execution"
         runtime = "required"
         runtime_schema = validate_trace
 
@@ -421,6 +506,7 @@ def test_schema_validator_must_return_real_bool(bad_result: object) -> None:
         dispatch="structural",
         semantics="projection",
         unhandled="traverse",
+        purpose="execution",
         runtime="required",
         runtime_schema=lambda _value: bad_result,  # type: ignore[arg-type]
         session_factory=StructuralSession,
@@ -441,6 +527,7 @@ def test_schema_validator_exception_preserves_cause() -> None:
         dispatch="structural",
         semantics="projection",
         unhandled="traverse",
+        purpose="execution",
         runtime="required",
         runtime_schema=broken,
         session_factory=StructuralSession,
@@ -459,6 +546,7 @@ def test_schema_checks_hook_returning_none_but_not_optional_absence() -> None:
         dispatch="structural",
         semantics="projection",
         unhandled="traverse",
+        purpose="execution",
         runtime="optional",
         runtime_schema=type(None),
         session_factory=StructuralSession,
@@ -482,6 +570,7 @@ def test_reject_invalid_runtime_schema_declarations(invalid: object) -> None:
         dispatch = "structural"
         entries = (ProgramVisitor,)
         session = StructuralSession
+        purpose = "execution"
         runtime = "required"
         runtime_schema = invalid
 
@@ -492,30 +581,33 @@ def test_reject_invalid_runtime_schema_declarations(invalid: object) -> None:
             "invalid-schema",
             (ProgramVisitor,),
             dispatch="structural",
+            purpose="execution",
             runtime="required",
             runtime_schema=invalid,  # type: ignore[arg-type]
             session_factory=StructuralSession,
         )
 
 
-@pytest.mark.parametrize("policy", ["ignored", "forbidden"])
-def test_runtime_schema_rejected_for_non_consuming_policies(policy: str) -> None:
-    class InvalidPolicySchemaPack:
-        target = "schema-policy"
+@pytest.mark.parametrize("purpose", ["conversion", "inspection"])
+def test_runtime_schema_needs_execution_purpose(purpose: str) -> None:
+    class NonExecutingSchemaPack:
+        target = "schema-purpose"
         dispatch = "structural"
+        semantics = "projection"
         entries = (ProgramVisitor,)
         session = StructuralSession
-        runtime = policy
         runtime_schema = dict
 
-    with pytest.raises(ValueError, match="schema needs required or optional"):
-        RealizationRegistry.from_pack(InvalidPolicySchemaPack)
-    with pytest.raises(ValueError, match="schema needs required or optional"):
+    NonExecutingSchemaPack.purpose = purpose  # type: ignore[attr-defined]
+    with pytest.raises(ValueError, match="Runtime schema needs execution purpose"):
+        RealizationRegistry.from_pack(NonExecutingSchemaPack)
+    with pytest.raises(ValueError, match="Runtime schema needs execution purpose"):
         RealizationRegistry(
-            "schema-policy",
+            "schema-purpose",
             (ProgramVisitor,),
             dispatch="structural",
-            runtime=policy,
+            semantics="projection",
+            purpose=purpose,
             runtime_schema=dict,
             session_factory=StructuralSession,
         )
@@ -524,3 +616,65 @@ def test_runtime_schema_rejected_for_non_consuming_policies(policy: str) -> None
 def test_schema_default_is_unchecked_for_existing_runtime_target() -> None:
     assert registry("required").runtime_schema is None
     assert convert(RUNTIME_SOURCE, realizations=registry("required"))[1] == {"value": 2}
+
+
+# A Source that defines __pyinto_runtime__ is executed; kinds never are. The
+# rule belongs to the Source and holds whatever the selected Target is.
+
+KINDS_WITH_RUNTIME = """
+from pyinto.kinds.datatypes.general import Size
+
+n: Size = 1
+
+def __pyinto_runtime__():
+    return 1
+"""
+
+
+@pytest.mark.parametrize("policy", ["conversion", "inspection", "required", "optional"])
+def test_kinds_and_runtime_hook_cannot_share_a_source(
+    policy: str, tmp_path: Path
+) -> None:
+    marker = tmp_path / "not_created"
+    source = KINDS_WITH_RUNTIME.replace(
+        "    return 1",
+        f"    from pathlib import Path\n    Path({str(marker)!r}).write_text('no')",
+    )
+    from pyinto import UnsupportedPython
+
+    with pytest.raises(UnsupportedPython, match="cannot import pyinto.kinds"):
+        convert(source, realizations=registry(policy))
+    assert not marker.exists()
+
+
+@pytest.mark.parametrize(
+    "spelling",
+    [
+        "from pyinto.kinds.memory.general import Memory",
+        "import pyinto.kinds.datatypes.general",
+        "import pyinto.kinds",
+    ],
+)
+def test_any_kinds_import_with_a_runtime_hook_is_rejected(spelling: str) -> None:
+    from pyinto import UnsupportedPython
+
+    source = f"{spelling}\n\ndef __pyinto_runtime__():\n    return 1\n"
+    with pytest.raises(UnsupportedPython, match="cannot import pyinto.kinds"):
+        PythonFrontend().parse(source)
+
+
+def test_kinds_imported_inside_the_hook_is_rejected() -> None:
+    from pyinto import UnsupportedPython
+
+    source = (
+        "def __pyinto_runtime__():\n"
+        "    from pyinto.kinds.datatypes.general import Size\n"
+        "    return 1\n"
+    )
+    with pytest.raises(UnsupportedPython, match="line 2"):
+        convert(source, realizations=registry("required"))
+
+
+def test_kinds_without_a_runtime_hook_still_reach_an_optional_target() -> None:
+    source = "from pyinto.kinds.datatypes.general import Size\n\nn: Size = 1\n"
+    assert convert(source, realizations=registry("optional"))[1] is RUNTIME_ABSENT

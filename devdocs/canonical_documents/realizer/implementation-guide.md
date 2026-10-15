@@ -10,7 +10,7 @@ Canonical source: `devdocs/canonical_sources/realizer/implementation_guide.py`
 
 対象と前提
 
-pyinto 0.2.0 Alpha の **Host** を利用する独立した Realizer の実装者向け。
+pyinto 0.3.0 Alpha の **Host** を利用する独立した Realizer の実装者向け。
 目的はPython ASTを直接処理することではなく、Frontendで正規化したConstruct Modelを
 Hostの呼び出し規則で受け取り、Target独自の成果物を提出すること。
 

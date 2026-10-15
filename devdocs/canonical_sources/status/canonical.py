@@ -42,8 +42,10 @@ class STATUS:
           個別射影の正しさを検査する包括的な契約体系、成果物への意味モード情報の
           自動埋め込みは未実装。
         - **Runtime情報経路**：トップレベルの `__pyinto_runtime__()` をConstruct Modelから
-          切り分け、Target Packの `runtime`（`required` / `forbidden` /
-          `optional` / `ignored`、既定は `ignored`）で利用を宣言できる。
+          切り分ける。Target Packは `purpose` で目的を宣言する。`conversion`（既定）は
+          `__pyinto_runtime__` を拒否し、`inspection` は受理して実行せず読み、
+          `execution` は `runtime`（`required` / `optional`）で利用を宣言する。
+          `__pyinto_runtime__` を定義したSourceは `pyinto.kinds` を import できない。
           信頼済みソースだけをHostが通常のPythonで実行し、戻り値を必要に応じて
           Session `finish(R)` に渡す。`optional` の関数不在時は公開センチネル
           `RUNTIME_ABSENT` を渡し、`None` と区別する。Model単独の `realize()` は
@@ -90,10 +92,16 @@ class STATUS:
           意味保存の検証は登録契約の照合に加えて実行テストを要する。
         """
 
-        title @= "現在の公開・開発構成（0.2.0）"
+        title @= "現在の公開・開発構成（0.3.0）"
 
     class Implemented:
         r"""
+        - 0.3.0・Targetの目的：Target Packに `purpose`（`conversion` /
+          `inspection` / `execution`）を追加し、`runtime` を `execution` 専用の
+          `required` / `optional` に絞った。`forbidden` は `conversion`（既定）に、
+          `ignored` は読み取り目的の `inspection`（`semantics = "projection"` 必須）に
+          置き換えた（CVT_005〜007）。`__pyinto_runtime__` を定義したSourceでの
+          `pyinto.kinds` の import を拒否する（FRT_081）。
         - 0.2.0・Kindの語彙：`pyinto.kinds` を追加し、型・メモリ・宣言の語を
           公開面と `general` / `detailed` の段に分けて、意味を持たないラベルとして
           Modelに記録する（CST_076〜081、FRT_075〜078、FRT_080）。Targetは

@@ -8,7 +8,10 @@ from __future__ import annotations
 
 import ast
 
+from .errors import UnsupportedPython
+
 RUNTIME_HOOK = "__pyinto_runtime__"
+KINDS = "pyinto.kinds"
 
 
 def split_runtime(tree: ast.Module) -> tuple[ast.Module, bool]:
@@ -54,4 +57,27 @@ def split_runtime(tree: ast.Module) -> tuple[ast.Module, bool]:
         ):
             raise ValueError(f"{RUNTIME_HOOK} must have no arguments or decorators")
         found = True
+    if found:
+        _reject_kinds_with_runtime(tree)
     return ast.Module(body=body, type_ignores=tree.type_ignores), found
+
+
+def _reject_kinds_with_runtime(tree: ast.Module) -> None:
+    """A Source with a runtime hook is executed; kinds are never executed.
+
+    ``pyinto.kinds`` describes information for conversion only, so a Source
+    that also defines ``__pyinto_runtime__`` contradicts itself. The rule is
+    the Source's own and does not depend on the selected Target.
+    """
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.level == 0:
+            names = [node.module or ""]
+        elif isinstance(node, ast.Import):
+            names = [alias.name for alias in node.names]
+        else:
+            continue
+        if any(name == KINDS or name.startswith(KINDS + ".") for name in names):
+            raise UnsupportedPython(
+                f"line {node.lineno}: a source with {RUNTIME_HOOK} cannot "
+                f"import {KINDS}; kinds are for conversion and are not executed"
+            )

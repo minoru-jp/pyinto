@@ -4,7 +4,7 @@ The Japanese canonical sources in `devdocs/canonical_sources/`, rendered as `dev
 
 ## Current coverage
 
-**Unabridged English text is present for all 15 published documents:** README, STATUS, CHANGELOG, Glossary, four Specification documents and their index, and all five Realizer guides/references and their index. The two runnable Target examples preserve their original Python code. The Composition, Construct Model, and Python Frontend specifications retain each clause, normative level, conditions, and related references. STATUS retains five sections and 138 entries; CHANGELOG retains all 128 Added, 79 Changed, and 5 Removed entries.
+**Unabridged English text is present for all 15 published documents:** README, STATUS, CHANGELOG, Glossary, four Specification documents and their index, and all five Realizer guides/references and their index. The two runnable Target examples preserve their original Python code. The Composition, Construct Model, and Python Frontend specifications retain each clause, normative level, conditions, and related references. STATUS retains five sections and 139 entries; CHANGELOG retains all 130 Added, 81 Changed, and 6 Removed entries.
 
 **Translation coverage is complete, but automated checks do not certify semantic equivalence.** Technical/editorial review against the Japanese canonical documents remains important before an external public release. Structural parity and SHA-256 tracking detect omission patterns and stale derivatives, not nuanced mistranslations.
 

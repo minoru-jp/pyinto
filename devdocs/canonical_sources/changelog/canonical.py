@@ -14,6 +14,17 @@ from shikumi_devdoc.norms.document import title
 class CHANGELOG:
     """公開バージョンごとの変更と、それ以前の開発履歴。"""
 
+    class V0_3_0:
+        """Targetの目的（変換・読み取り・実行）の宣言と、Runtime関数とKindの併用禁止。"""
+
+        title @= "0.3.0（Alpha）"
+        version @= "0.3.0"
+        changed @= 'Target Packの `runtime` を、新しい宣言 `purpose = "execution"` のときだけ書ける `required` / `optional` の2値に絞った（CVT_005、CVT_007）。`runtime` は `execution` では省略できず、`conversion` / `inspection` で書くと登録時に拒否する。`runtime_schema` も `execution` でだけ宣言できる。`RealizationRegistry` の引数 `runtime` の既定は `None` になり、属性 `purpose` を追加した。'
+        changed @= "Target Packの既定の動きを、`__pyinto_runtime__` を黙って捨てて変換する旧 `ignored` から、`__pyinto_runtime__` を拒否する `conversion` に変えた（CVT_005）。"
+        added @= 'Target Packの宣言 `purpose` を追加（CVT_005、CVT_006、CVT_007）。`conversion`（既定）は変換目的で `__pyinto_runtime__` を拒否し、`inspection` は読み取り目的で `__pyinto_runtime__` があっても実行せずに受理し、`execution` は実行目的で `runtime` を必須とする。`inspection` は `semantics = "projection"` を必須とする。'
+        added @= "`__pyinto_runtime__` を定義したSourceでの `pyinto.kinds` の import を、Targetの目的に関係なく `UnsupportedPython` で拒否する規則を追加（FRT_081）。`__pyinto_runtime__` の本体の中のimportも対象とし、`PythonFrontend.parse` と `convert()` のどちらでもPythonを実行する前に拒否する。"
+        removed @= '`runtime` の値 `forbidden` と `ignored` を削除。`forbidden` は `purpose = "conversion"`（既定）に、`ignored` は `purpose = "inspection"` に置き換える。'
+
     class V0_2_0:
         """Target宣言の通常クラス属性化、Kindの語彙（型・メモリ・宣言）の追加、用語の整理、Hostの実行時依存・整数制約・メモリのデモの撤廃。"""
 

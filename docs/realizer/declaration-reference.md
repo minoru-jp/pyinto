@@ -246,17 +246,29 @@ output: `frozenset[str] | None`
 
 detail: See the [Construct / Variant Reference](construct-reference.md) for the list of built-in Constructs.
 
+## API_028
+
+Declare how the Target treats the Source: conversion, inspection, or execution. This is independent of Dispatch.
+
+name: `purpose`
+
+kind: Value
+
+input: `'conversion'` (default) `/ 'inspection' / 'execution'`
+
+detail: `conversion`: for conversion; reject a present `__pyinto_runtime__` and call `finish()`. `inspection`: for reading; accept a present `__pyinto_runtime__` without executing it and call `finish()`; requires `semantics = 'projection'`. `execution`: for execution; `runtime` must be declared and a custom Session is required.
+
 ## API_022
 
-Declare the optional runtime information channel. This is independent of Dispatch and Semantics; legacy Packs that omit it ignore the hook.
+Declare how an execution Target needs `__pyinto_runtime__`. It may be declared only with `purpose = 'execution'`, and there it cannot be omitted.
 
 name: `runtime`
 
 kind: Value
 
-input: `'required' / 'forbidden' / 'optional' / 'ignored'` (default)
+input: `'required' / 'optional'`
 
-detail: `required`: hook required, execute and call `finish(R)`. `forbidden`: reject a present hook. `optional`: execute a present hook and call `finish(R)`, otherwise call `finish(RUNTIME_ABSENT)`. `ignored`: allow a present hook but never execute it; call `finish()`. `required` and `optional` need a custom Session; the default text Session does not accept a runtime argument.
+detail: `required`: hook required, execute and call `finish(R)`. `optional`: execute a present hook and call `finish(R)`, otherwise call `finish(RUNTIME_ABSENT)`. Declaring it with `conversion` / `inspection` is rejected at registration.
 
 ## API_023
 
@@ -268,9 +280,9 @@ kind: Operation
 
 input: Declare a synchronous zero-argument top-level function in trusted Python source. Import the public `RUNTIME_ABSENT` sentinel from `pyinto.realizations`.
 
-output: For `required` and present `optional`, the returned object R; for absent `optional`, `RUNTIME_ABSENT`.
+output: For `execution` Targets, the returned object R; for absent `optional`, `RUNTIME_ABSENT`.
 
-detail: Model-only `realize()` rejects `required` because it lacks source. Sessions for Targets not using runtime information keep their existing `finish()` contract.
+detail: Model-only `realize()` rejects `required` because it lacks source. Sessions of `conversion` / `inspection` Targets receive `finish()` without arguments.
 
 
 ## API_024
@@ -283,7 +295,7 @@ kind: Value
 
 input: `type | Callable[[object], bool]`, e.g. `runtime_schema = ResultType` or `runtime_schema = validate_result`
 
-detail: Allowed only for `runtime='required'` or `'optional'`. A plain class is checked only with `isinstance`. Parameterized generic expressions such as `list[int]` and union expressions are not accepted directly; express nested types or value constraints with a predicate.
+detail: Allowed only with `purpose = 'execution'`. A plain class is checked only with `isinstance`. Parameterized generic expressions such as `list[int]` and union expressions are not accepted directly; express nested types or value constraints with a predicate.
 
 detail: Predicates take one argument R and must return a genuine `bool`. A false result, an invalid return type, or a validation exception raises `RuntimeSchemaError` before `Session.finish()`. An absent optional hook bypasses schema checking; a returned `None` does not.
 
